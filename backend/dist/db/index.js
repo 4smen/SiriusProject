@@ -1,23 +1,25 @@
-﻿// Импортируем необходимые библиотеки
-import sqlite3 from 'sqlite3';  // Драйвер для работы с SQLite
-import { open } from 'sqlite';  // Функция для открытия БД
-import bcrypt from 'bcryptjs';  // Для хеширования паролей
-
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.initDB = exports.db = void 0;
+// Импортируем необходимые библиотеки
+const sqlite3_1 = __importDefault(require("sqlite3")); // Драйвер для работы с SQLite
+const sqlite_1 = require("sqlite"); // Функция для открытия БД
+const bcryptjs_1 = __importDefault(require("bcryptjs")); // Для хеширования паролей
 // Создаем переменную для хранения подключения к БД
-export let db: any = null;
-
+exports.db = null;
 // Основная функция инициализации БД
-export const initDB = async () => {
+const initDB = async () => {
     // 1. ОТКРЫВАЕМ ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ
-    db = await open({
-        filename: './database.db',  // Имя файла БД
-        driver: sqlite3.Database    // Драйвер для SQLite
+    exports.db = await (0, sqlite_1.open)({
+        filename: './database.db', // Имя файла БД
+        driver: sqlite3_1.default.Database // Драйвер для SQLite
     });
-
     console.log('нашли нашу дб-шечку');
-
     // 2. СОЗДАЕМ ТАБЛИЦУ ЗАДАЧ
-    await db.exec(`
+    await exports.db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID задачи
       username TEXT NOT NULL,                   -- Имя пользователя
@@ -29,9 +31,8 @@ export const initDB = async () => {
     )
   `);
     console.log('табличечка tasks создана иль проверена');
-
     // 3. СОЗДАЕМ ТАБЛИЦУ АДМИНИСТРАТОРОВ
-    await db.exec(`
+    await exports.db.exec(`
     CREATE TABLE IF NOT EXISTS admins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID админа
       username TEXT UNIQUE NOT NULL,            -- Логин (уникальный)
@@ -39,31 +40,21 @@ export const initDB = async () => {
     )
   `);
     console.log('табличечка admins создана иль проверена');
-
     // 4. СОЗДАЕМ СТАНДАРТНОГО АДМИНИСТРАТОРА
-    const adminExists = await db.get(
-        'SELECT * FROM admins WHERE username = ?',
-        ['admin']
-    );
-
+    const adminExists = await exports.db.get('SELECT * FROM admins WHERE username = ?', ['admin']);
     if (!adminExists) {
         // Хешируем пароль "123"
-        const hashedPassword = await bcrypt.hash('123', 10);
-
+        const hashedPassword = await bcryptjs_1.default.hash('123', 10);
         // Добавляем администратора в БД
-        await db.run(
-            'INSERT INTO admins (username, password) VALUES (?, ?)',
-            ['admin', hashedPassword]
-        );
+        await exports.db.run('INSERT INTO admins (username, password) VALUES (?, ?)', ['admin', hashedPassword]);
         console.log('👑 Создан администратор: login=admin, password=123');
     }
-
     // 5. СОЗДАЕМ ИНДЕКСЫ ДЛЯ БЫСТРОГО ПОИСКА
-    await db.exec('CREATE INDEX IF NOT EXISTS idx_username ON tasks(username)');
-    await db.exec('CREATE INDEX IF NOT EXISTS idx_email ON tasks(email)');
-    await db.exec('CREATE INDEX IF NOT EXISTS idx_status ON tasks(isCompleted)');
-    await db.exec('CREATE INDEX IF NOT EXISTS idx_created ON tasks(createdAt)');
-
+    await exports.db.exec('CREATE INDEX IF NOT EXISTS idx_username ON tasks(username)');
+    await exports.db.exec('CREATE INDEX IF NOT EXISTS idx_email ON tasks(email)');
+    await exports.db.exec('CREATE INDEX IF NOT EXISTS idx_status ON tasks(isCompleted)');
+    await exports.db.exec('CREATE INDEX IF NOT EXISTS idx_created ON tasks(createdAt)');
     console.log('индексы готовы');
     console.log('дб-шечка готова');
 };
+exports.initDB = initDB;
