@@ -8,7 +8,7 @@ import { initDB } from './db';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 app.use((req, res, next) => {
   // Устанавливаем кодировку UTF-8 для всех ответов
@@ -20,9 +20,14 @@ app.use((req, res, next) => {
 // Middleware
 app.use(cors());
 app.use(express.json({
-  type: 'application/json; charset=utf-8',
   limit: '10mb'
 }));
+
+// Add a debugging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Body:`, req.body);
+  next();
+});
 
 // Routes
 app.use('/api/tasks', taskRoutes);
