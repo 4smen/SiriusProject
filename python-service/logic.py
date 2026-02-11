@@ -1,6 +1,7 @@
 import os
 from groq import Groq
 
+os.environ["GROQ_API_KEY"] = "your_groq_api_key_here"
 
 class LlmClient:
     def __init__(self, api_key=None):
