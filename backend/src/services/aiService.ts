@@ -236,9 +236,9 @@ class AIService {
 
       await db.run(
         `UPDATE tasks 
-         SET isCompleted = 1, completedAt = ? 
+         SET isCompleted = 1
          WHERE id = ?`,
-        [new Date().toISOString(), anomaly.task_id]
+        [anomaly.task_id]
       );
 
       await db.run(
