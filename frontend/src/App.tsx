@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, AppDispatch } from './store';
 import TaskList from './components/TaskList/TaskList';
 import AddTaskForm from './components/AddTaskForm/AddTaskForm';
 import LoginForm from './components/LoginForm/LoginForm';
+import AIAnomalies from './components/AiAnomalies/AiAnomalies';
 import { verifyToken } from './store/slices/authSlice';
 import {
     Container,
@@ -11,23 +12,63 @@ import {
     Typography,
     AppBar,
     Toolbar,
-    CssBaseline
+    CssBaseline,
+    Paper,
+    Chip,
+    CircularProgress
 } from '@mui/material';
-import { Task as TaskIcon } from '@mui/icons-material';
+import { Task as TaskIcon, Warning as WarningIcon } from '@mui/icons-material';
 
-// Главный компонент без Provider
 const AppContent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { user } = useSelector((state: RootState) => state.auth);
+    const { user, isLoading, isVerified } = useSelector((state: RootState) => state.auth);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        const verify = async () => {
+            if (isMounted) {
+                await dispatch(verifyToken());
+            }
+        };
+        
+        const token = localStorage.getItem('token');
+        if (token && !isVerified) {
+            verify();
+        }
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [dispatch, isVerified]);
+
+    if (isLoading && !isVerified) {
+        return (
+            <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '100vh',
+                gap: 2
+            }}>
+                <CircularProgress />
+                <Typography variant="body1" color="text.secondary">
+                    Р—Р°РіСЂСѓР·РєР° РїСЂРёР»РѕР¶РµРЅРёСЏ...
+                </Typography>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ flexGrow: 1, minHeight: '100vh', bgcolor: '#f5f5f5' }}>
-            <AppBar position="static">
+            <AppBar position="static" elevation={1}>
                 <Toolbar>
                     <TaskIcon sx={{ mr: 1 }} />
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         Task Manager
                     </Typography>
+                    
                     <LoginForm />
                 </Toolbar>
             </AppBar>
@@ -37,21 +78,38 @@ const AppContent: React.FC = () => {
                 <TaskList />
 
                 {user?.isAdmin && (
-                    <Box sx={{ mt: 4, p: 3, bgcolor: 'white', borderRadius: 2, boxShadow: 1 }}>
-                        <Typography variant="h6" gutterBottom>
-                            Режим администратора
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Вы вошли как администратор ({user.username}). Можете редактировать задачи и отмечать их как выполненные.
-                        </Typography>
-                    </Box>
+                    <Paper 
+                        elevation={0}
+                        sx={{ 
+                            mt: 4, 
+                            p: 3, 
+                            bgcolor: 'primary.light',
+                            color: 'white',
+                            borderRadius: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2
+                        }}
+                    >
+                        <WarningIcon sx={{ fontSize: 32 }} />
+                        <Box>
+                            <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
+                                РџР°РЅРµР»СЊ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                                Р’С‹ РІРѕС€Р»Рё РєР°Рє {user.username}. AI-Р°СЃСЃРёСЃС‚РµРЅС‚ РѕС‚СЃР»РµР¶РёРІР°РµС‚ 
+                                Р°РЅРѕРјР°Р»РёРё РІСЂРµРјРµРЅРё РІС‹РїРѕР»РЅРµРЅРёСЏ Р·Р°РґР°С‡.
+                            </Typography>
+                        </Box>
+                    </Paper>
                 )}
             </Container>
+
+            <AIAnomalies />
         </Box>
     );
 };
 
-// Обертка с Provider
 const App: React.FC = () => {
     return (
         <Provider store={store}>

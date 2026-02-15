@@ -11,7 +11,6 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use((req, res, next) => {
-  // Устанавливаем кодировку UTF-8 для всех ответов
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Access-Control-Allow-Origin', '*');
   next();
@@ -23,22 +22,18 @@ app.use(express.json({
   limit: '10mb'
 }));
 
-// Add a debugging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - Body:`, req.body);
   next();
 });
 
-// Routes
 app.use('/api/tasks', taskRoutes);
 app.use('/api/auth', authRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Инициализация БД и запуск сервера
 initDB().then(() => {
     app.listen(PORT, () => {
         console.log(`сервачок: http://localhost:${PORT}`);

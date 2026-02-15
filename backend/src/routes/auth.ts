@@ -6,7 +6,7 @@ import { db } from '../db';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Вход администратора
+//вход администратора
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -15,21 +15,19 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Username and password required' });
         }
 
-        // Ищем администратора
         const admin = await db.get('SELECT * FROM admins WHERE username = ?', [username]);
 
         if (!admin) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // Проверяем пароль
         const isValidPassword = await bcrypt.compare(password, admin.password);
 
         if (!isValidPassword) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // Создаем JWT токен
+        //JWT токен
         const token = jwt.sign(
             { userId: admin.id, isAdmin: true },
             JWT_SECRET,
@@ -50,7 +48,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Проверка токена
+//проверка токена
 router.get('/verify', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -62,7 +60,6 @@ router.get('/verify', async (req, res) => {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; isAdmin: boolean };
 
-        // Проверяем, существует ли администратор
         const admin = await db.get('SELECT * FROM admins WHERE id = ?', [decoded.userId]);
 
         if (!admin) {

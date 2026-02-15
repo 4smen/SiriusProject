@@ -13,6 +13,6 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "create-anomalies-table.js"],
   "exclude": ["node_modules", "dist"]
 }

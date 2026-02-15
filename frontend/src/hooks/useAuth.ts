@@ -7,7 +7,6 @@ export const useAuth = () => {
     const auth = useSelector((state: RootState) => state.auth);
 
     return {
-        // Состояние
         user: auth.user,
         token: auth.token,
         isLoading: auth.isLoading,
@@ -15,16 +14,14 @@ export const useAuth = () => {
         isAdmin: auth.user?.isAdmin || false,
         isAuthenticated: !!auth.user,
 
-        // Действия
         login: (username: string, password: string) =>
             dispatch(login({ username, password })),
         logout: () => dispatch(logout()),
         verify: () => dispatch(verifyToken()),
         clearError: () => dispatch(clearAuthError()),
 
-        // Проверки прав
         canEditTask: () => auth.user?.isAdmin || false,
         canDeleteTask: () => auth.user?.isAdmin || false,
-        canCreateTask: () => true // Все могут создавать задачи
+        canCreateTask: () => true
     };
 };

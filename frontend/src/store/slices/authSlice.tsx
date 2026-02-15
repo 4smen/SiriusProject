@@ -12,9 +12,9 @@ interface AuthState {
     token: string | null;
     isLoading: boolean;
     error: string | null;
+    isVerified: boolean;
 }
 
-// Загружаем из localStorage при инициализации
 const storedToken = localStorage.getItem('token');
 const storedUser = localStorage.getItem('user');
 
@@ -22,10 +22,10 @@ const initialState: AuthState = {
     user: storedUser ? JSON.parse(storedUser) : null,
     token: storedToken,
     isLoading: false,
-    error: null
+    error: null,
+    isVerified: false
 };
 
-// Async thunks
 export const login = createAsyncThunk(
     'auth/login',
     async (credentials: { username: string; password: string }, { rejectWithValue }) => {
@@ -40,7 +40,7 @@ export const login = createAsyncThunk(
 
 export const verifyToken = createAsyncThunk(
     'auth/verify',
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, getState }) => {
         try {
             const response = await authAPI.verify();
             return response.data;
@@ -65,7 +65,6 @@ const authSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Login
             .addCase(login.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -74,21 +73,33 @@ const authSlice = createSlice({
                 state.isLoading = false;
                 state.user = action.payload.user;
                 state.token = action.payload.token;
+                state.isVerified = true;
                 localStorage.setItem('token', action.payload.token);
                 localStorage.setItem('user', JSON.stringify(action.payload.user));
             })
             .addCase(login.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
+                state.isVerified = false;
             })
 
-            // Verify
             .addCase(verifyToken.fulfilled, (state, action) => {
-                state.user = action.payload.user;
+                const newUser = action.payload.user;
+                const currentUser = state.user;
+
+                if (!currentUser || 
+                    currentUser.id !== newUser.id || 
+                    currentUser.username !== newUser.username ||
+                    currentUser.isAdmin !== newUser.isAdmin) {
+                    state.user = newUser;
+                }
+                
+                state.isVerified = true;
             })
             .addCase(verifyToken.rejected, (state) => {
                 state.user = null;
                 state.token = null;
+                state.isVerified = true;
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
             })
@@ -97,6 +108,7 @@ const authSlice = createSlice({
             .addCase(logout.fulfilled, (state) => {
                 state.user = null;
                 state.token = null;
+                state.isVerified = false;
             });
     }
 });

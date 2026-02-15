@@ -10,7 +10,6 @@ const api = axios.create({
     }
 });
 
-// Перехватчик для добавления токена
 api.interceptors.request.use(config => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -19,7 +18,6 @@ api.interceptors.request.use(config => {
     return config;
 });
 
-// Обработка ошибок
 api.interceptors.response.use(
     response => response,
     error => {

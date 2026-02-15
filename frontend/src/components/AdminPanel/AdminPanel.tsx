@@ -57,8 +57,7 @@ const AdminPanel: React.FC = () => {
         tasksAPI.getStats(),
         tasksAPI.getTasks({ limit: 5, sortField: 'createdAt', sortOrder: 'DESC' })
       ]);
-      
-      // Декодируем текст задач если нужно
+
       const recentTasks = (tasksResponse.data.data || []).map((task: any) => ({
         ...task,
         text: decodeIfNeeded(task.text),
@@ -79,12 +78,10 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  // Функция для декодирования если текст в неправильной кодировке
   const decodeIfNeeded = (text: string): string => {
     if (!text) return '';
     
     try {
-      // Пробуем декодировать если это похоже на закодированную строку
       if (text.includes('\\u') || text.includes('&#')) {
         return decodeURIComponent(escape(text));
       }
@@ -94,7 +91,6 @@ const AdminPanel: React.FC = () => {
     }
   };
 
-  // Функция для безопасного форматирования даты
   const formatDate = (dateString: string): string => {
     try {
       if (!dateString) return 'Нет даты';
@@ -157,16 +153,6 @@ const AdminPanel: React.FC = () => {
             </Alert>
           )}
 
-          {/* Статистика */}
-          <Box sx={{ 
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: 3,
-            mb: 4
-          }}>
-            {/* Карточки статистики... оставляем как было */}
-          </Box>
-
           <Typography variant="h6" sx={{ mb: 2 }}>
             Последние задачи
           </Typography>
@@ -206,7 +192,6 @@ const AdminPanel: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        {/* ИСПРАВЛЕННАЯ СТРОКА: используем formatDate */}
                         {formatDate(task.createdAt)}
                       </TableCell>
                     </TableRow>
@@ -230,7 +215,6 @@ const AdminPanel: React.FC = () => {
               variant="outlined"
               color="success"
               onClick={() => {
-                // Экспорт с правильной кодировкой
                 const encoder = new TextEncoder();
                 const dataStr = JSON.stringify(tasks, null, 2);
                 const dataBlob = new Blob(['\uFEFF' + dataStr], { 

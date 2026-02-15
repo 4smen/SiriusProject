@@ -7,7 +7,7 @@ exports.requireAdmin = exports.authenticateAdmin = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_1 = require("../db");
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-// Проверка токена администратора
+//проверка токена администратора
 const authenticateAdmin = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
@@ -16,7 +16,6 @@ const authenticateAdmin = async (req, res, next) => {
         }
         const token = authHeader.split(' ')[1];
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        // Проверяем, существует ли администратор
         const admin = await db_1.db.get('SELECT * FROM admins WHERE id = ?', [decoded.userId]);
         if (!admin) {
             return res.status(401).json({ error: 'Invalid token' });
@@ -33,7 +32,7 @@ const authenticateAdmin = async (req, res, next) => {
     }
 };
 exports.authenticateAdmin = authenticateAdmin;
-// Middleware для проверки, является ли пользователь администратором
+//Middleware для проверки, является ли пользователь администратором
 const requireAdmin = (req, res, next) => {
     const user = req.user;
     if (!user || !user.isAdmin) {

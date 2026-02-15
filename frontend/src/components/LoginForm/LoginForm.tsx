@@ -27,7 +27,6 @@ const LoginForm: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user, isLoading, error } = useSelector((state: RootState) => state.auth);
 
-    // Проверяем токен при загрузке компонента
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token && !user) {

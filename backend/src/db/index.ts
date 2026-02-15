@@ -1,22 +1,20 @@
-﻿// Импортируем необходимые библиотеки
-import sqlite3 from 'sqlite3';  // Драйвер для работы с SQLite
-import { open } from 'sqlite';  // Функция для открытия БД
-import bcrypt from 'bcryptjs';  // Для хеширования паролей
+﻿import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import bcrypt from 'bcryptjs';
 
-// Создаем переменную для хранения подключения к БД
 export let db: any = null;
 
-// Основная функция инициализации БД
+//основная функция инициализации бд
 export const initDB = async () => {
-    // 1. ОТКРЫВАЕМ ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ
+    //подключение
     db = await open({
-        filename: './database.db',  // Имя файла БД
-        driver: sqlite3.Database    // Драйвер для SQLite
+        filename: './database.sqlite',
+        driver: sqlite3.Database
     });
 
     console.log('нашли нашу дб-шечку');
 
-    // 2. СОЗДАЕМ ТАБЛИЦУ ЗАДАЧ
+    //таблица задач
     await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID задачи
@@ -25,12 +23,12 @@ export const initDB = async () => {
       text TEXT NOT NULL,                       -- Текст задачи
       isCompleted BOOLEAN DEFAULT 0,            -- Выполнена ли задача (0/1)
       isEdited BOOLEAN DEFAULT 0,               -- Редактировал ли админ
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP -- Дата создания
+      createdAt DATETIME DEFAULT (datetime('now', '+3 hours')) -- Дата создания
     )
   `);
     console.log('табличечка tasks создана иль проверена');
 
-    // 3. СОЗДАЕМ ТАБЛИЦУ АДМИНИСТРАТОРОВ
+    //таблица админа
     await db.exec(`
     CREATE TABLE IF NOT EXISTS admins (
       id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID админа
@@ -40,17 +38,33 @@ export const initDB = async () => {
   `);
     console.log('табличечка admins создана иль проверена');
 
-    // 4. СОЗДАЕМ СТАНДАРТНОГО АДМИНИСТРАТОРА
+    //таблица аномалий
+    await db.exec(`
+    CREATE TABLE IF NOT EXISTS anomalies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID аномалии
+      task_id INTEGER NOT NULL,                 -- ID задачи
+      username TEXT NOT NULL,                    -- Имя пользователя
+      task_text TEXT NOT NULL,                   -- Текст задачи
+      active_hours REAL NOT NULL,                -- Фактическое время выполнения
+      estimated_hours REAL NOT NULL,             -- Прогнозируемое время
+      deviation REAL NOT NULL,                    -- Отклонение (во сколько раз)
+      detected_at TEXT NOT NULL,                  -- Когда обнаружена
+      is_resolved INTEGER DEFAULT 0,              -- Решена ли аномалия (0/1)
+      resolved_at TEXT,                           -- Когда решена
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    )
+  `);
+    console.log('табличечка anomalies создана иль проверена');
+
+    //админ
     const adminExists = await db.get(
         'SELECT * FROM admins WHERE username = ?',
         ['admin']
     );
 
     if (!adminExists) {
-        // Хешируем пароль "123"
         const hashedPassword = await bcrypt.hash('123', 10);
 
-        // Добавляем администратора в БД
         await db.run(
             'INSERT INTO admins (username, password) VALUES (?, ?)',
             ['admin', hashedPassword]
@@ -58,7 +72,7 @@ export const initDB = async () => {
         console.log('👑 Создан администратор: login=admin, password=123');
     }
 
-    // 5. СОЗДАЕМ ИНДЕКСЫ ДЛЯ БЫСТРОГО ПОИСКА
+    //индексочки мои любимые
     await db.exec('CREATE INDEX IF NOT EXISTS idx_username ON tasks(username)');
     await db.exec('CREATE INDEX IF NOT EXISTS idx_email ON tasks(email)');
     await db.exec('CREATE INDEX IF NOT EXISTS idx_status ON tasks(isCompleted)');

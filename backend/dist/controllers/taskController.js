@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getStats = exports.updateTask = exports.createTask = exports.getTasks = void 0;
 const db_1 = require("../db");
-// Получение задач с пагинацией и сортировкой
 const getTasks = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -10,14 +9,11 @@ const getTasks = async (req, res) => {
         const sortField = req.query.sortField || 'createdAt';
         const sortOrder = req.query.sortOrder || 'DESC';
         const offset = (page - 1) * limit;
-        // Валидация поля сортировки
         const allowedFields = ['username', 'email', 'isCompleted', 'createdAt'];
         const field = allowedFields.includes(sortField) ? sortField : 'createdAt';
         const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-        // Получаем общее количество задач
         const totalResult = await db_1.db.get('SELECT COUNT(*) as count FROM tasks');
         const total = totalResult.count;
-        // Получаем задачи с сортировкой и пагинацией
         const tasks = await db_1.db.all(`SELECT * FROM tasks 
        ORDER BY ${field} ${order}
        LIMIT ? OFFSET ?`, [limit, offset]);
@@ -38,20 +34,17 @@ const getTasks = async (req, res) => {
     }
 };
 exports.getTasks = getTasks;
-// Создание новой задачи
+//создание новой задачи
 const createTask = async (req, res) => {
     try {
         const { username, email, text } = req.body;
-        // Валидация
         if (!username || !email || !text) {
             return res.status(400).json({ error: 'All fields are required' });
         }
-        // Проверка email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ error: 'Invalid email format' });
         }
-        // Создание задачи
         const result = await db_1.db.run('INSERT INTO tasks (username, email, text) VALUES (?, ?, ?)', [username, email, text]);
         const newTask = await db_1.db.get('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
         res.status(201).json(newTask);
@@ -62,7 +55,7 @@ const createTask = async (req, res) => {
     }
 };
 exports.createTask = createTask;
-// Обновление задачи (только для администратора)
+//обновление задачи (только для администратора)
 const updateTask = async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);
@@ -71,12 +64,10 @@ const updateTask = async (req, res) => {
         if (!isAdmin) {
             return res.status(403).json({ error: 'Admin access required' });
         }
-        // Получаем текущую задачу
         const task = await db_1.db.get('SELECT * FROM tasks WHERE id = ?', [taskId]);
         if (!task) {
             return res.status(404).json({ error: 'Task not found' });
         }
-        // Подготавливаем поля для обновления
         const updates = [];
         const values = [];
         if (text !== undefined && text !== task.text) {
@@ -92,9 +83,7 @@ const updateTask = async (req, res) => {
             return res.status(400).json({ error: 'No changes provided' });
         }
         values.push(taskId);
-        // Выполняем обновление
         await db_1.db.run(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`, values);
-        // Возвращаем обновленную задачу
         const updatedTask = await db_1.db.get('SELECT * FROM tasks WHERE id = ?', [taskId]);
         res.json(updatedTask);
     }
@@ -104,7 +93,7 @@ const updateTask = async (req, res) => {
     }
 };
 exports.updateTask = updateTask;
-// Получение статистики
+//получение статистики
 const getStats = async (req, res) => {
     try {
         const stats = await db_1.db.get(`

@@ -33,7 +33,6 @@ const initialState: TasksState = {
     error: null
 };
 
-// Async thunks
 export const fetchTasks = createAsyncThunk(
     'tasks/fetchTasks',
     async (params: Partial<TaskFilters>, { rejectWithValue }) => {
@@ -90,7 +89,6 @@ const tasksSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Fetch tasks
             .addCase(fetchTasks.pending, (state) => {
                 state.loading = true;
                 state.error = null;

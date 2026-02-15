@@ -8,6 +8,7 @@ import uvicorn
 from dotenv import load_dotenv
 from logic import LlmClient
 import aiohttp
+import sys
 
 load_dotenv()
 
@@ -21,23 +22,14 @@ llm_client = LlmClient()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 class TaskIdRequest(BaseModel):
     task_id: int = Field(..., gt=0, description="The ID of the task")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "task_id": 1
-            }
-        }
-
 
 class TaskForecastResponse(BaseModel):
     task_name: str
@@ -45,105 +37,71 @@ class TaskForecastResponse(BaseModel):
     reasoning: str
     confidence: str
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "task_name": "Implement user authentication",
-                "estimated_hours": 8.5,
-                "reasoning": "Considering JWT implementation, email verification, testing, and documentation",
-                "confidence": "high"
-            }
-        }
-
-
-class TaskActiveTimeResponse(BaseModel):
-    active_hours: float
-    status: str
-    created_at: datetime
-    completed_at: Optional[datetime]
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "active_hours": 5.0,
-                "status": "active",
-                "created_at": "2026-02-09T10:00:00",
-                "completed_at": None
-            }
-        }
-
-
 @app.get("/")
 async def root():
-    return {
-        "message": "🐍 Python Microservice API",
-        "status": "running",
-        "docs": "http://localhost:5002/docs",
-        "redoc": "http://localhost:5002/redoc",
-        "health": "http://localhost:5002/health"
-    }
-
+    return {"message": "python microservice api", "status": "running"}
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "service": "Python Microservice",
-        "timestamp": datetime.now().isoformat()
-    }
-
-
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return {"message": "No favicon"}
-
+    return {"status": "healthy", "service": "python microservice", "timestamp": datetime.now().isoformat()}
 
 @app.post("/api/tasks/forecast-time", response_model=TaskForecastResponse)
 async def forecast_task_time(request: TaskIdRequest):
+    print(f"\nполучен запрос forecast для task_id: {request.task_id}", flush=True)
+    
     try:
         backend_url = os.getenv("BACKEND_URL", "http://localhost:5001")
+        print(f"запрашиваю задачи из: {backend_url}/api/tasks?limit=1000", flush=True)
+        
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{backend_url}/api/tasks?limit=1000") as resp:
+                print(f"статус ответа: {resp.status}", flush=True)
+                
                 if resp.status != 200:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Could not fetch tasks from backend"
-                    )
+                    print(f"ошибка: node.js вернул {resp.status}", flush=True)
+                    raise HTTPException(status_code=500, detail="could not fetch tasks from backend")
+                
                 response_data = await resp.json()
+                print(f"получен ответ от node.js", flush=True)
         
         tasks = response_data.get("data", [])
+        print(f"всего задач получено: {len(tasks)}", flush=True)
+        
+        print(f"поиск задачи с id {request.task_id}...", flush=True)
+        
+        task_data = None
+        
         task_data = next((task for task in tasks if task["id"] == request.task_id), None)
         
         if not task_data:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Task with id {request.task_id} not found"
-            )
+            print(f"задача {request.task_id} не найдена!", flush=True)
+            raise HTTPException(status_code=404, detail=f"task with id {request.task_id} not found")
+        
+        print(f"задача найдена: {task_data.get('text', '')}", flush=True)
         
         task_name = task_data.get("text", "")[:100]
         task_description = task_data.get("text", "")
         
         if not task_description:
-            raise HTTPException(
-                status_code=400,
-                detail="Task has no description"
-            )
+            raise HTTPException(status_code=400, detail="task has no description")
         
-        prompt = f"""Analyze this task and estimate the time needed to complete it in hours.
+        prompt = f"""analyze this task and estimate the time needed to complete it in hours.
 
-Task Description: {task_description}
+task description: {task_description}
 
-Please provide:
-1. Estimated hours needed (as a number)
-2. Brief reasoning for the estimate
-3. Confidence level (low/medium/high)
+please provide:
+1. estimated hours needed (as a number)
+2. brief reasoning for the estimate
+3. confidence level (low/medium/high)
 
-Format your response exactly as:
-HOURS: [number]
-REASONING: [your reasoning]
-CONFIDENCE: [low/medium/high]"""
+format your response exactly as:
+hours: [number]
+reasoning: [your reasoning]
+confidence: [low/medium/high]"""
 
+        print("отправляю запрос в llm...", flush=True)
         response = llm_client.ask(prompt)
+        print(f"ответ llm:\n{response}", flush=True)
         
         lines = response.strip().split('\n')
         estimated_hours = 0
@@ -151,70 +109,56 @@ CONFIDENCE: [low/medium/high]"""
         confidence = "medium"
         
         for line in lines:
-            if line.startswith("HOURS:"):
+            if line.startswith("hours:"):
                 try:
-                    estimated_hours = float(line.replace("HOURS:", "").strip())
-                except ValueError:
+                    estimated_hours = float(line.replace("hours:", "").strip())
+                except:
                     estimated_hours = 5.0
-            elif line.startswith("REASONING:"):
-                reasoning = line.replace("REASONING:", "").strip()
-            elif line.startswith("CONFIDENCE:"):
-                confidence = line.replace("CONFIDENCE:", "").strip().lower()
+            elif line.startswith("reasoning:"):
+                reasoning = line.replace("reasoning:", "").strip()
+            elif line.startswith("confidence:"):
+                confidence = line.replace("confidence:", "").strip().lower()
         
-        if confidence not in ["low", "medium", "high"]:
-            confidence = "medium"
-        
-        if estimated_hours <= 0:
-            estimated_hours = 1.0
+        print(f"результат: {estimated_hours}ч, confidence={confidence}", flush=True)
         
         return TaskForecastResponse(
             task_name=task_name,
             estimated_hours=estimated_hours,
-            reasoning=reasoning or "LLM analysis completed",
+            reasoning=reasoning or "llm analysis completed",
             confidence=confidence
         )
     
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Forecast error: {str(e)}"
-        )
+        print(f"ошибка: {str(e)}", flush=True)
+        raise HTTPException(status_code=500, detail=f"forecast error: {str(e)}")
 
-
-@app.post("/api/tasks/active-time", response_model=TaskActiveTimeResponse)
+@app.post("/api/tasks/active-time")
 async def calculate_task_active_time(request: TaskIdRequest):
+    print(f"\nзапрос active-time для task_id: {request.task_id}", flush=True)
+    
     try:
         backend_url = os.getenv("BACKEND_URL", "http://localhost:5001")
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{backend_url}/api/tasks?limit=1000") as resp:
                 if resp.status != 200:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Could not fetch tasks from backend"
-                    )
+                    raise HTTPException(status_code=500, detail="could not fetch tasks from backend")
                 response_data = await resp.json()
         
         tasks = response_data.get("data", [])
         task_data = next((task for task in tasks if task["id"] == request.task_id), None)
         
         if not task_data:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Task with id {request.task_id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"task with id {request.task_id} not found")
         
         created_at_str = task_data.get("createdAt")
         if not created_at_str:
-            raise HTTPException(
-                status_code=400,
-                detail="Task has no creation time"
-            )
+            raise HTTPException(status_code=400, detail="task has no creation time")
         
         try:
             created_at = datetime.fromisoformat(created_at_str.replace('Z', '+00:00'))
-        except ValueError:
+        except:
             created_at = datetime.fromisoformat(created_at_str)
         
         if task_data.get("isCompleted"):
@@ -225,52 +169,27 @@ async def calculate_task_active_time(request: TaskIdRequest):
             status = "active"
         
         time_difference = end_time - created_at
+        active_hours = max(0, round(time_difference.total_seconds() / 3600, 2))
         
-        active_hours = time_difference.total_seconds() / 3600
+        print(f"активное время: {active_hours}ч", flush=True)
         
-        if active_hours < 0:
-            active_hours = 0
-        
-        active_hours = round(active_hours, 2)
-        
-        return TaskActiveTimeResponse(
-            active_hours=active_hours,
-            status=status,
-            created_at=created_at,
-            completed_at=end_time if status == "completed" else None
-        )
+        return {
+            "active_hours": active_hours,
+            "status": status,
+            "created_at": created_at,
+            "completed_at": end_time if status == "completed" else None
+        }
     
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Active time calculation error: {str(e)}"
-        )
-
-
-@app.exception_handler(ValueError)
-async def value_error_handler(request, exc):
-    return {
-        "error": "Validation error",
-        "detail": str(exc)
-    }
-
-
-@app.on_event("startup")
-async def startup_event():
-    print("✅ Python Microservice started")
-    print(f"📍 Service running on {os.getenv('PYTHON_SERVICE_HOST', '0.0.0.0')}:{os.getenv('PYTHON_SERVICE_PORT', '5002')}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    print("🛑 Python Microservice stopped")
-
+        print(f"ошибка active-time: {str(e)}", flush=True)
+        raise HTTPException(status_code=500, detail=f"active time calculation error: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PYTHON_SERVICE_PORT", 5002))
     host = os.getenv("PYTHON_SERVICE_HOST", "0.0.0.0")
+    
+    print(f"\nзапуск python сервиса на {host}:{port}")
+    print("логи будут выводиться здесь\n")
     
     uvicorn.run(
         "main:app",
@@ -278,4 +197,3 @@ if __name__ == "__main__":
         port=port,
         reload=os.getenv("ENVIRONMENT") == "development"
     )
-

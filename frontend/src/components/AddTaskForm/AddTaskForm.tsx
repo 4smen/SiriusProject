@@ -63,7 +63,6 @@ const AddTaskForm: React.FC = () => {
         try {
             await dispatch(createTask(formData)).unwrap();
 
-            // Сброс формы
             setFormData({
                 username: '',
                 email: '',
@@ -72,7 +71,6 @@ const AddTaskForm: React.FC = () => {
             setErrors({});
             setSuccess(true);
 
-            // Скрыть успех через 3 секунды
             setTimeout(() => setSuccess(false), 3000);
 
         } catch (error: any) {
@@ -91,7 +89,6 @@ const AddTaskForm: React.FC = () => {
             [name]: value
         }));
 
-        // Очистить ошибку при изменении
         if (errors[name]) {
             setErrors(prev => ({
                 ...prev,
