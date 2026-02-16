@@ -17,13 +17,13 @@ export const initDB = async () => {
     //таблица задач
     await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID задачи
-      username TEXT NOT NULL,                   -- Имя пользователя
-      email TEXT NOT NULL,                      -- Email
-      text TEXT NOT NULL,                       -- Текст задачи
-      isCompleted BOOLEAN DEFAULT 0,            -- Выполнена ли задача (0/1)
-      isEdited BOOLEAN DEFAULT 0,               -- Редактировал ли админ
-      createdAt DATETIME DEFAULT (datetime('now', '+3 hours')) -- Дата создания
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      email TEXT NOT NULL,
+      text TEXT NOT NULL, 
+      isCompleted BOOLEAN DEFAULT 0,
+      isEdited BOOLEAN DEFAULT 0,
+      createdAt DATETIME
     )
   `);
     console.log('табличечка tasks создана иль проверена');
@@ -31,9 +31,9 @@ export const initDB = async () => {
     //таблица админа
     await db.exec(`
     CREATE TABLE IF NOT EXISTS admins (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID админа
-      username TEXT UNIQUE NOT NULL,            -- Логин (уникальный)
-      password TEXT NOT NULL                    -- Хешированный пароль
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL
     )
   `);
     console.log('табличечка admins создана иль проверена');
@@ -41,16 +41,16 @@ export const initDB = async () => {
     //таблица аномалий
     await db.exec(`
     CREATE TABLE IF NOT EXISTS anomalies (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,     -- Уникальный ID аномалии
-      task_id INTEGER NOT NULL,                 -- ID задачи
-      username TEXT NOT NULL,                    -- Имя пользователя
-      task_text TEXT NOT NULL,                   -- Текст задачи
-      active_hours REAL NOT NULL,                -- Фактическое время выполнения
-      estimated_hours REAL NOT NULL,             -- Прогнозируемое время
-      deviation REAL NOT NULL,                    -- Отклонение (во сколько раз)
-      detected_at TEXT NOT NULL,                  -- Когда обнаружена
-      is_resolved INTEGER DEFAULT 0,              -- Решена ли аномалия (0/1)
-      resolved_at TEXT,                           -- Когда решена
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      username TEXT NOT NULL,
+      task_text TEXT NOT NULL,
+      active_hours REAL NOT NULL,
+      estimated_hours REAL NOT NULL,
+      deviation REAL NOT NULL,
+      detected_at TEXT NOT NULL,
+      is_resolved INTEGER DEFAULT 0,
+      resolved_at TEXT,
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     )
   `);

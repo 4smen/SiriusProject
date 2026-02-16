@@ -126,7 +126,7 @@ const AiAnomalies: React.FC = () => {
         active_hours: 0,
         estimated_hours: 0,
         deviation: 0,
-        detected_at: new Date().toISOString(),
+        detected_at: "",
         is_resolved: true
       });
       setSnackbarOpen(true);
@@ -134,15 +134,6 @@ const AiAnomalies: React.FC = () => {
       setError('не удалось выполнить задачу');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResolveAnomaly = async (anomalyId: number) => {
-    try {
-      await api.post(`/api/tasks/anomalies/${anomalyId}/resolve`);
-      setAnomalies(prev => prev.filter(a => a.id !== anomalyId));
-    } catch (err) {
-      setError('не удалось отметить аномалию');
     }
   };
 
@@ -159,7 +150,7 @@ const AiAnomalies: React.FC = () => {
         active_hours: 0,
         estimated_hours: 0,
         deviation: 0,
-        detected_at: new Date().toISOString(),
+        detected_at: "",
         is_resolved: true
       });
       setSnackbarOpen(true);
@@ -168,14 +159,6 @@ const AiAnomalies: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatTime = (hours: number | undefined | null): string => {
-    if (!hours && hours !== 0) return '0 ч';
-    if (hours < 1) {
-      return `${Math.round(hours * 60)} мин`;
-    }
-    return `${hours.toFixed(1)} ч`;
   };
 
   const formatDate = (dateString: string): string => {
@@ -208,36 +191,7 @@ const AiAnomalies: React.FC = () => {
 
   return (
     <>
-      <Tooltip title="ai ассистент">
-        <Badge
-          badgeContent={anomalies.length}
-          color="error"
-          sx={{
-            position: 'fixed',
-            bottom: 24,
-            right: 24,
-            zIndex: 1200,
-          }}
-        >
-          <IconButton
-            onClick={() => setIsOpen(!isOpen)}
-            sx={{
-              bgcolor: isOpen ? 'error.main' : 'primary.main',
-              color: 'white',
-              width: 56,
-              height: 56,
-              '&:hover': {
-                bgcolor: isOpen ? 'error.dark' : 'primary.dark',
-              },
-              boxShadow: 3,
-            }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : <AdminIcon />}
-          </IconButton>
-        </Badge>
-      </Tooltip>
-
-      {!isOpen && notifications.length > 0 && (
+      {notifications.length > 0 && (
         <Fade in={!isOpen}>
           <Paper
             sx={{
@@ -307,7 +261,7 @@ const AiAnomalies: React.FC = () => {
         </Fade>
       )}
 
-      {isOpen && (
+      {(
         <Paper
           elevation={6}
           sx={{
@@ -334,7 +288,7 @@ const AiAnomalies: React.FC = () => {
                   sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
                 />
               </Box>
-              <Box display="flex" gap={1}>
+              {/* <Box display="flex" gap={1}>
                 <Tooltip title="обновить">
                   <IconButton size="small" sx={{ color: 'white' }} onClick={fetchAnomalies}>
                     <RefreshIcon />
@@ -345,7 +299,7 @@ const AiAnomalies: React.FC = () => {
                     <CloseIcon />
                   </IconButton>
                 </Tooltip>
-              </Box>
+              </Box> */}
             </Box>
           </Box>
 
@@ -378,13 +332,13 @@ const AiAnomalies: React.FC = () => {
                       <Box display="flex" gap={2} alignItems="center" flexWrap="wrap" mb={2}>
                         <Chip
                           icon={<ScheduleIcon />}
-                          label={formatTime(anomaly.active_hours)}
+                          label={anomaly.active_hours}
                           size="small"
                           variant="outlined"
                         />
                         <Chip
                           icon={<SpeedIcon />}
-                          label={formatTime(anomaly.estimated_hours)}
+                          label={anomaly.estimated_hours}
                           size="small"
                           variant="outlined"
                         />
@@ -410,14 +364,6 @@ const AiAnomalies: React.FC = () => {
                             onClick={() => handleCompleteTask(anomaly.id, anomaly.task_id)}
                           >
                             выполнить
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            color="success"
-                            size="small"
-                            onClick={() => handleResolveAnomaly(anomaly.id)}
-                          >
-                            отметить
                           </Button>
                         </Box>
                       </Box>

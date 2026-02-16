@@ -53,11 +53,10 @@ export const createTask = async (req: Request, res: Response) => {
 
         const localTime = now.toISOString();
 
-        const correctTime = new Date().toLocaleString('sv-SE');
         
-        await db.run(
+        const result = await db.run(
             'INSERT INTO tasks (username, email, text, createdAt) VALUES (?, ?, ?, ?)',
-            [username, email, text, correctTime])
+            [username, email, text, localTime])
 
         if (!username || !email || !text) {
             return res.status(400).json({ error: 'All fields are required' });
@@ -67,11 +66,6 @@ export const createTask = async (req: Request, res: Response) => {
         if (!emailRegex.test(email)) {
             return res.status(400).json({ error: 'Invalid email format' });
         }
-
-        const result = await db.run(
-            'INSERT INTO tasks (username, email, text) VALUES (?, ?, ?)',
-            [username, email, text]
-        );
 
         const newTask = await db.get(
             'SELECT * FROM tasks WHERE id = ?',
