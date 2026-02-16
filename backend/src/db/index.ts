@@ -69,7 +69,7 @@ export const initDB = async () => {
             'INSERT INTO admins (username, password) VALUES (?, ?)',
             ['admin', hashedPassword]
         );
-        console.log('👑 Создан администратор: login=admin, password=123');
+        console.log('создан администратор: login=admin, password=123');
     }
 
     //индексочки мои любимые
