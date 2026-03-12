@@ -4,7 +4,6 @@ import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
-// все маршруты защищены
 router.get('/', authenticate, getProjects);
 router.post('/', authenticate, requireAdmin, createProject);
 

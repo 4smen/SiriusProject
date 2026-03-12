@@ -1,5 +1,4 @@
-﻿// frontend/src/store/slices/authSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+﻿import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authAPI } from '../../services/api';
 import { AuthState, User, LoginCredentials, RegisterCredentials } from '../../types/task';
 
@@ -65,7 +64,6 @@ const authSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            // Login
             .addCase(login.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -84,7 +82,6 @@ const authSlice = createSlice({
                 state.isVerified = false;
             })
             
-            // Register
             .addCase(register.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -119,11 +116,8 @@ const authSlice = createSlice({
                 state.isVerified = true;
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                // ⚠️ НЕ делаем редирект здесь!
-                // Просто очищаем состояние, компоненты сами обновятся
             })
 
-            // Logout
             .addCase(logout.fulfilled, (state) => {
                 state.user = null;
                 state.token = null;
@@ -132,5 +126,5 @@ const authSlice = createSlice({
     }
 });
 
-export const { clearError } = authSlice.actions;  // ←注意: clearError, а не clearAuthError
+export const { clearError } = authSlice.actions;
 export default authSlice.reducer;

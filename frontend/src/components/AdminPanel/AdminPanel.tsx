@@ -1,5 +1,4 @@
-﻿// frontend/src/components/AdminPanel/AdminPanel.tsx
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useAuth } from '../../hooks/useAuth';
 import { RootState } from '../../store';
@@ -56,7 +55,6 @@ const AdminPanel: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // проверяем, что пользователь - админ
     if (!user?.isAdmin) {
         return null;
     }
@@ -66,7 +64,6 @@ const AdminPanel: React.FC = () => {
         setError(null);
         
         try {
-            // получаем статистику и последние задачи
             const [statsResponse, tasksResponse] = await Promise.all([
                 tasksAPI.getStats(),
                 tasksAPI.getAll({ limit: 5, sortField: 'createdAt', sortOrder: 'DESC' })
@@ -141,7 +138,6 @@ const AdminPanel: React.FC = () => {
                 </Alert>
             )}
 
-            {/* Статистика */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} md={3}>
                     <Card>
@@ -216,7 +212,6 @@ const AdminPanel: React.FC = () => {
                 </Grid>
             </Grid>
 
-            {/* Последние задачи */}
             <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                     <Paper sx={{ p: 2 }}>
@@ -275,7 +270,6 @@ const AdminPanel: React.FC = () => {
                             задачи на модерации
                         </Typography>
                         <List>
-                            {/* здесь можно добавить список запросов на задачи */}
                             <ListItem>
                                 <ListItemText primary="модерация задач вынесена в отдельный компонент" />
                             </ListItem>

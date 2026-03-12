@@ -1,5 +1,4 @@
-﻿// frontend/src/store/slices/taskSlice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+﻿import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { tasksAPI } from '../../services/api';
 import { Task, PaginatedResponse, PaginationParams } from '../../types/task';
 
@@ -62,9 +61,6 @@ export const updateTask = createAsyncThunk(
         }
     }
 );
-
-// ⚠️ ВНИМАНИЕ: createTask больше не используется!
-// Теперь задачи создаются через запросы (task-requests)
 
 const tasksSlice = createSlice({
     name: 'tasks',

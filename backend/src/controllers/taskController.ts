@@ -2,7 +2,6 @@
 import { db } from '../db';
 import { aiService } from '../services/aiService';
 
-// получение всех задач (с пагинацией)
 export const getTasks = async (req: Request, res: Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
@@ -12,7 +11,6 @@ export const getTasks = async (req: Request, res: Response) => {
 
         const offset = (page - 1) * limit;
 
-        // разрешённые поля для сортировки
         const allowedFields = ['title', 'isCompleted', 'createdAt', 'completedAt'];
         const field = allowedFields.includes(sortField) ? sortField : 'createdAt';
         const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
@@ -49,7 +47,6 @@ export const getTasks = async (req: Request, res: Response) => {
     }
 };
 
-// получение задач текущего пользователя
 export const getUserTasks = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.id;
@@ -70,7 +67,6 @@ export const getUserTasks = async (req: Request, res: Response) => {
     }
 };
 
-// получение задачи по id
 export const getTaskById = async (req: Request, res: Response) => {
     try {
         const taskId = parseInt(req.params.id);
@@ -97,7 +93,6 @@ export const getTaskById = async (req: Request, res: Response) => {
     }
 };
 
-// создание задачи (только админ, из утверждённого запроса)
 export const createTask = async (req: Request, res: Response) => {
     try {
         const { userId, projectId, title, description, requestId } = req.body;
@@ -134,7 +129,6 @@ export const createTask = async (req: Request, res: Response) => {
     }
 };
 
-// обновление задачи (только админ)
 export const updateTask = async (req: Request, res: Response) => {
     try {
         const taskId = parseInt(req.params.id);
@@ -186,7 +180,6 @@ export const updateTask = async (req: Request, res: Response) => {
             WHERE t.id = ?
         `, [taskId]);
 
-        // проверка аномалии при завершении задачи
         if (isCompleted && !task.isCompleted) {
             aiService.checkCompletedTask(taskId).catch(error => {
                 console.error('ошибка проверки аномалии:', error);
@@ -201,7 +194,6 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 };
 
-// статистика
 export const getStats = async (req: Request, res: Response) => {
     try {
         const stats = await db.get(`

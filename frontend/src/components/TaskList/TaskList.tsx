@@ -1,5 +1,4 @@
-﻿// frontend/src/components/TaskList/TaskList.tsx
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTasks, setSort } from '../../store/slices/taskSlice';
 import { AppDispatch, RootState } from '../../store';

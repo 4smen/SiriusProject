@@ -25,12 +25,9 @@ const AppContent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user, isLoading, isVerified } = useSelector((state: RootState) => state.auth);
     
-    // используем ref для предотвращения множественных вызовов
     const initializedRef = useRef(false);
 
-    // проверка токена - только один раз
     useEffect(() => {
-        // если уже инициализировали - выходим
         if (initializedRef.current) return;
         
         const token = localStorage.getItem('token');
@@ -44,14 +41,13 @@ const AppContent: React.FC = () => {
         
         init();
         
-    }, [dispatch]); // ← только dispatch в зависимостях
+    }, [dispatch]);
 
-    // загрузка проектов - только когда есть пользователь
     useEffect(() => {
         if (user) {
             dispatch(fetchProjects());
         }
-    }, [user, dispatch]); // ← user и dispatch
+    }, [user, dispatch]);
 
     if (isLoading && !isVerified) {
         return (

@@ -1,4 +1,3 @@
-// frontend/src/components/ProjectForm/ProjectForm.tsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createProject } from '../../store/slices/projectsSlice';

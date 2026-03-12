@@ -6,7 +6,6 @@ import taskRequestRoutes from './taskRequests';
 
 const router = Router();
 
-// все маршруты api
 router.use('/auth', authRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/projects', projectRoutes);

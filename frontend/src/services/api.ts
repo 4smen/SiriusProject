@@ -1,5 +1,4 @@
-﻿// frontend/src/services/api.ts
-import axios from 'axios';
+﻿import axios from 'axios';
 import { 
     LoginCredentials, 
     RegisterCredentials,
@@ -16,10 +15,9 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json'
     },
-    timeout: 10000 // таймаут 10 секунд
+    timeout: 10000
 });
 
-// логирование всех запросов
 api.interceptors.request.use(config => {
     console.log('запрос:', config.method?.toUpperCase(), config.url);
     console.log('заголовки:', config.headers);
@@ -35,7 +33,6 @@ api.interceptors.request.use(config => {
     return config;
 });
 
-// логирование всех ответов
 api.interceptors.response.use(
     response => {
         console.log('ответ:', response.status, response.config.url);
@@ -48,7 +45,6 @@ api.interceptors.response.use(
         if (error.code === 'ECONNABORTED') {
             console.log('   таймаут запроса');
         } else if (error.response) {
-            // сервер ответил с ошибкой
             console.log('статус:', error.response.status);
             console.log('данные ошибки:', error.response.data);
             console.log('заголовки:', error.response.headers);
@@ -57,14 +53,11 @@ api.interceptors.response.use(
                 console.log('401 ошибка, очищаем localStorage');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                // НЕ ДЕЛАЕМ РЕДИРЕКТ!
             }
         } else if (error.request) {
-            // запрос был отправлен, но ответа нет
             console.log('нет ответа от сервера');
             console.log('запрос:', error.request);
         } else {
-            // ошибка при настройке запроса
             console.log('ошибка настройки запроса:', error.message);
         }
         
@@ -72,7 +65,6 @@ api.interceptors.response.use(
     }
 );
 
-// Аутентификация
 export const authAPI = {
     login: (credentials: LoginCredentials) => {
         console.log('попытка входа:', credentials.username);
@@ -88,7 +80,6 @@ export const authAPI = {
     }
 };
 
-// Проекты
 export const projectsAPI = {
     getAll: () => {
         console.log('загрузка проектов');
@@ -100,7 +91,6 @@ export const projectsAPI = {
     }
 };
 
-// Запросы на задачи
 export const taskRequestsAPI = {
     create: (data: TaskRequestCreateDTO) => {
         console.log('создание запроса на задачу');
@@ -112,7 +102,7 @@ export const taskRequestsAPI = {
     },
     approve: (id: number, deadline?: string) => {
     console.log('утверждение запроса:', id, 'с дедлайном:', deadline);
-    return api.post(`/task-requests/${id}/approve`, { deadline });  // ← передаём дедлайн в теле
+    return api.post(`/task-requests/${id}/approve`, { deadline });
     },
     reject: (id: number) => {
         console.log('отклонение запроса:', id);
@@ -120,7 +110,6 @@ export const taskRequestsAPI = {
     }
 };
 
-// Задачи
 export const tasksAPI = {
     getAll: (params?: any) => {
         console.log('загрузка задач', params);

@@ -1,7 +1,6 @@
-﻿// frontend/src/components/LoginForm/LoginForm.tsx
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, register, logout } from '../../store/slices/authSlice';  // ← импортируем logout
+import { login, register, logout } from '../../store/slices/authSlice';
 import { AppDispatch, RootState } from '../../store';
 import {
     Box,
@@ -49,12 +48,10 @@ const LoginForm: React.FC = () => {
 
     const [open, setOpen] = useState(false);
     const [tabValue, setTabValue] = useState(0);
-    
-    // Login form
+
     const [loginUsername, setLoginUsername] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
-    
-    // Register form
+
     const [regUsername, setRegUsername] = useState('');
     const [regPassword, setRegPassword] = useState('');
     const [regEmail, setRegEmail] = useState('');
@@ -104,8 +101,7 @@ const LoginForm: React.FC = () => {
     };
 
     const handleLogout = () => {
-        dispatch(logout());  // ← просто dispatch, без async/await
-        // не нужно делать редирект, Redux сам обновит состояние
+        dispatch(logout());
     };
 
     const handleClose = () => {
@@ -132,7 +128,7 @@ const LoginForm: React.FC = () => {
                     </Typography>
                     <Button
                         variant="outlined"
-                        onClick={handleLogout}  // ← просто вызываем handleLogout
+                        onClick={handleLogout}
                         startIcon={<LogoutIcon />}
                         size="small"
                         color="inherit"

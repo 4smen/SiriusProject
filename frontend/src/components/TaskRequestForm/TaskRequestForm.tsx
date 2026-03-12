@@ -1,4 +1,3 @@
-// frontend/src/components/TaskRequestForm/TaskRequestForm.tsx
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createTaskRequest } from '../../store/slices/taskRequestsSlice';
@@ -32,7 +31,7 @@ const TaskRequestForm: React.FC = () => {
         projectId: '',
         title: '',
         description: '',
-        deadline: ''  // ← теперь просто строка
+        deadline: ''
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [success, setSuccess] = useState(false);
@@ -60,7 +59,6 @@ const TaskRequestForm: React.FC = () => {
             newErrors.description = 'описание должно быть подробнее (минимум 10 символов)';
         }
 
-        // валидация дедлайна (если заполнен)
         if (formData.deadline) {
             const selectedDate = new Date(formData.deadline);
             const today = new Date();
@@ -85,7 +83,6 @@ const TaskRequestForm: React.FC = () => {
         }
 
         try {
-            // преобразуем строку даты в ISO строку для отправки
             const deadlineISO = formData.deadline 
                 ? new Date(formData.deadline).toISOString() 
                 : undefined;

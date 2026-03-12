@@ -4,9 +4,7 @@ import bcrypt from 'bcryptjs';
 
 export let db: any = null;
 
-//основная функция инициализации бд
 export const initDB = async () => {
-    //подключение
     db = await open({
         filename: './database.sqlite',
         driver: sqlite3.Database
@@ -35,23 +33,23 @@ export const initDB = async () => {
       `);
     console.log('табличечка tasks создана иль проверена');
 
-    //таблица аномалий
-    await db.exec(`
-    CREATE TABLE IF NOT EXISTS anomalies (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      task_id INTEGER NOT NULL,
-      username TEXT NOT NULL,
-      task_text TEXT NOT NULL,
-      active_hours REAL NOT NULL,
-      estimated_hours REAL NOT NULL,
-      deviation REAL NOT NULL,
-      detected_at TEXT NOT NULL,
-      is_resolved INTEGER DEFAULT 0,
-      resolved_at TEXT,
-      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-    )
-  `);
-    console.log('табличечка anomalies создана иль проверена');
+  //   //таблица аномалий
+  //   await db.exec(`
+  //   CREATE TABLE IF NOT EXISTS anomalies (
+  //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+  //     task_id INTEGER NOT NULL,
+  //     username TEXT NOT NULL,
+  //     task_text TEXT NOT NULL,
+  //     active_hours REAL NOT NULL,
+  //     estimated_hours REAL NOT NULL,
+  //     deviation REAL NOT NULL,
+  //     detected_at TEXT NOT NULL,
+  //     is_resolved INTEGER DEFAULT 0,
+  //     resolved_at TEXT,
+  //     FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+  //   )
+  // `);
+  //   console.log('табличечка anomalies создана иль проверена');
 
     //админ
     const adminExists = await db.get(
@@ -93,7 +91,7 @@ export const initDB = async () => {
     )
     `);
 
-    // таблица запросов на создание задач (для модерации админом)
+    // таблица запросов на создание задач
     await db.exec(`
       CREATE TABLE IF NOT EXISTS task_requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

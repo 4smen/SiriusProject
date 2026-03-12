@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
 
-// создать запрос на задачу (обновлённая версия)
 export const createTaskRequest = async (req: Request, res: Response) => {
     try {
         const { projectId, title, description, deadline } = req.body;
@@ -36,7 +35,6 @@ export const createTaskRequest = async (req: Request, res: Response) => {
     }
 };
 
-// получить все ожидающие запросы (только для админа)
 export const getPendingRequests = async (req: Request, res: Response) => {
     try {
         console.log('получение ожидающих запросов');
@@ -58,11 +56,10 @@ export const getPendingRequests = async (req: Request, res: Response) => {
     }
 };
 
-// утвердить запрос (обновлённая версия)
 export const approveRequest = async (req: Request, res: Response) => {
     try {
         const requestId = parseInt(req.params.id);
-        const { deadline } = req.body;  // ← получаем дедлайн из тела запроса
+        const { deadline } = req.body;
         const adminId = (req as any).user.id;
 
         console.log('утверждение запроса:', requestId, 'дедлайн:', deadline);
@@ -78,10 +75,8 @@ export const approveRequest = async (req: Request, res: Response) => {
 
         const now = new Date().toISOString();
 
-        // используем переданный дедлайн или из запроса
         const taskDeadline = deadline || request.deadline;
 
-        // создаём задачу из запроса
         const taskResult = await db.run(
             `INSERT INTO tasks 
              (userId, projectId, title, description, deadline, createdAt, requestId) 
@@ -91,13 +86,12 @@ export const approveRequest = async (req: Request, res: Response) => {
                 request.projectId, 
                 request.title, 
                 request.description, 
-                taskDeadline,  // ← используем дедлайн
+                taskDeadline,
                 now, 
                 requestId
             ]
         );
 
-        // обновляем статус запроса
         await db.run(
             `UPDATE task_requests 
              SET status = 'approved', reviewedAt = ?, reviewedBy = ? 
@@ -121,8 +115,6 @@ export const approveRequest = async (req: Request, res: Response) => {
     }
 };
 
-
-// отклонить запрос (админ)
 export const rejectRequest = async (req: Request, res: Response) => {
     try {
         const requestId = parseInt(req.params.id);

@@ -25,7 +25,6 @@ class AIService {
     this.pythonServiceUrl = process.env.PYTHON_SERVICE_URL || 'http://localhost:5002';
   }
 
-  //прогнозируемое время выполнения задачи
   async getTaskForecast(taskId: number): Promise<TaskForecast | null> {
     try {
       const response = await axios.post(
@@ -40,7 +39,6 @@ class AIService {
     }
   }
 
-  //время активности задачи
   async getTaskActiveTime(taskId: number): Promise<number | null> {
     try {
       const response = await axios.post(
@@ -102,7 +100,6 @@ class AIService {
     }
   }
 
-  //автоматически снять аномалию, если задача выполнена
   private async autoResolveAnomaly(taskId: number): Promise<void> {
     try {
       const existing = await db.get(
@@ -196,8 +193,7 @@ class AIService {
         if (anomaly) {
           anomalies.push(anomaly);
         }
-        
-        // небольшая задержка, чтобы не перегружать сервис
+
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 

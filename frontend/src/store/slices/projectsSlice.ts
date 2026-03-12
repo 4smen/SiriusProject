@@ -1,4 +1,3 @@
-// frontend/src/store/slices/projectsSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { projectsAPI } from '../../services/api';
 import { Project, ProjectCreateDTO } from '../../types/task';

@@ -1,5 +1,4 @@
-﻿// frontend/src/hooks/useAuth.ts
-import { useSelector, useDispatch } from 'react-redux';
+﻿import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { login, logout, verifyToken, clearError } from '../store/slices/authSlice';
 
@@ -29,7 +28,7 @@ export const useAuth = () => {
         isLoading,
         error,
         isVerified,
-        isAdmin: user?.isAdmin || false,  // ← добавляем isAdmin для удобства
+        isAdmin: user?.isAdmin || false,
         login: handleLogin,
         logout: handleLogout,
         verifyToken: handleVerifyToken,

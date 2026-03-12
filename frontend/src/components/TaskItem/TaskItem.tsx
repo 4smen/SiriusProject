@@ -1,5 +1,4 @@
-﻿// frontend/src/components/TaskItem/TaskItem.tsx
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateTask } from '../../store/slices/taskSlice';
 import { AppDispatch, RootState } from '../../store';
@@ -65,12 +64,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         }
         
         if (editedDeadline) {
-            // преобразуем в ISO строку с временем
             const deadlineDate = new Date(editedDeadline);
             deadlineDate.setHours(23, 59, 59, 999);
             updates.deadline = deadlineDate.toISOString();
         } else if (task.deadline) {
-            // если дедлайн был, а стал пустым - удаляем
             updates.deadline = null;
         }
         
@@ -90,7 +87,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
         setEditedDeadline(task.deadline ? task.deadline.split('T')[0] : '');
     };
 
-    // проверка на просроченность
     const isOverdue = task.deadline && !task.isCompleted && new Date(task.deadline) < new Date();
 
     return (
@@ -149,8 +145,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                                     {task.projectName || 'без проекта'}
                                 </Typography>
                             </Box>
-
-                            {/* ← ОТОБРАЖЕНИЕ ДЕДЛАЙНА */}
+                            
                             {task.deadline && (
                                 <Box display="flex" alignItems="center" gap={0.5}>
                                     <CalendarIcon fontSize="small" color="action" />

@@ -5,12 +5,10 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// регистрация обычного пользователя
 export const register = async (req: Request, res: Response) => {
     try {
         const { username, password, email } = req.body;
 
-        // проверка на существование
         const existing = await db.get(
             'SELECT id FROM users WHERE username = ? OR email = ?',
             [username, email]
@@ -48,7 +46,6 @@ export const register = async (req: Request, res: Response) => {
     }
 };
 
-// вход (работает и для админов, и для обычных пользователей)
 export const login = async (req: Request, res: Response) => {
     try {
         const { username, password } = req.body;

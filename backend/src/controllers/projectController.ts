@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
 
-// получить все проекты
 export const getProjects = async (req: Request, res: Response) => {
     try {
         console.log('получение проектов');
@@ -20,7 +19,6 @@ export const getProjects = async (req: Request, res: Response) => {
     }
 };
 
-// создать проект (только админ)
 export const createProject = async (req: Request, res: Response) => {
     try {
         const { name, description } = req.body;

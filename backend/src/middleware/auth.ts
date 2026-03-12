@@ -4,7 +4,6 @@ import { db } from '../db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// проверка токена (для любых пользователей)
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
@@ -35,7 +34,6 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 };
 
-// проверка прав администратора
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;
 
