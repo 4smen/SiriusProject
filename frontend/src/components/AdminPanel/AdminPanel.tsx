@@ -1,239 +1,290 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿// frontend/src/components/AdminPanel/AdminPanel.tsx
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
+import { RootState } from '../../store';
 import { tasksAPI } from '../../services/api';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Chip,
-  Alert,
-  LinearProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  IconButton,
-  Tooltip
+    Box,
+    Paper,
+    Typography,
+    Grid,
+    Card,
+    CardContent,
+    Button,
+    CircularProgress,
+    Alert,
+    List,
+    ListItem,
+    ListItemText,
+    Divider,
+    Chip
 } from '@mui/material';
 import {
-  AdminPanelSettings as AdminIcon,
-  Task as TaskIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon,
-  Refresh as RefreshIcon,
-  Edit as EditIcon
+    Assignment as TaskIcon,
+    CheckCircle as CompletedIcon,
+    Edit as EditedIcon,
+    Warning as WarningIcon,
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 interface Stats {
-  total: number;
-  completed: number;
-  edited: number;
-  recentTasks: any[];
+    tasks: {
+        total: number;
+        completed: number;
+        edited: number;
+    };
+    projects: number;
+    users: number;
+}
+
+interface RecentTask {
+    id: number;
+    title: string;
+    username: string;
+    projectName: string;
+    isCompleted: boolean;
+    createdAt: string;
 }
 
 const AdminPanel: React.FC = () => {
-  const { isAdmin, user } = useAuth();
-  const { tasks } = useSelector((state: RootState) => state.tasks);
-  
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStats = async () => {
-    if (!isAdmin) return;
+    const { user } = useAuth();
+    const { tasks } = useSelector((state: RootState) => state.tasks);
     
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const [statsResponse, tasksResponse] = await Promise.all([
-        tasksAPI.getStats(),
-        tasksAPI.getTasks({ limit: 5, sortField: 'createdAt', sortOrder: 'DESC' })
-      ]);
+    const [stats, setStats] = useState<Stats | null>(null);
+    const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-      const recentTasks = (tasksResponse.data.data || []).map((task: any) => ({
-        ...task,
-        text: decodeIfNeeded(task.text),
-        username: decodeIfNeeded(task.username),
-        email: decodeIfNeeded(task.email)
-      }));
-      
-      setStats({
-        total: statsResponse.data.total || 0,
-        completed: statsResponse.data.completed || 0,
-        edited: statsResponse.data.edited || 0,
-        recentTasks
-      });
-    } catch (err: any) {
-      setError(err.message || 'Ошибка загрузки статистики');
-    } finally {
-      setLoading(false);
+    // проверяем, что пользователь - админ
+    if (!user?.isAdmin) {
+        return null;
     }
-  };
 
-  const decodeIfNeeded = (text: string): string => {
-    if (!text) return '';
-    
-    try {
-      if (text.includes('\\u') || text.includes('&#')) {
-        return decodeURIComponent(escape(text));
-      }
-      return text;
-    } catch {
-      return text;
-    }
-  };
+    const fetchStats = async () => {
+        setLoading(true);
+        setError(null);
+        
+        try {
+            // получаем статистику и последние задачи
+            const [statsResponse, tasksResponse] = await Promise.all([
+                tasksAPI.getStats(),
+                tasksAPI.getAll({ limit: 5, sortField: 'createdAt', sortOrder: 'DESC' })
+            ]);
 
-  const formatDate = (dateString: string): string => {
-    try {
-      if (!dateString) return 'Нет даты';
-      
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Некорректная дата';
-      
-      return date.toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch {
-      return 'Ошибка даты';
-    }
-  };
-
-  useEffect(() => {
-    if (isAdmin) {
-      fetchStats();
-    }
-  }, [isAdmin]);
-
-  if (!isAdmin) {
-    return (
-      <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>
-        Требуются права администратора для доступа к этой панели
-      </Alert>
-    );
-  }
-
-  const completionRate = stats ? (stats.completed / stats.total * 100) || 0 : 0;
-  const editedRate = stats ? (stats.edited / stats.total * 100) || 0 : 0;
-
-  return (
-    <Box sx={{ mt: 2, mb: 4 }}>
-      <Card variant="outlined">
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <AdminIcon sx={{ mr: 2, fontSize: 30 }} color="primary" />
-            <Typography variant="h5" component="h2">
-              Панель администратора
-            </Typography>
-            <Tooltip title="Обновить">
-              <IconButton 
-                onClick={fetchStats} 
-                sx={{ ml: 'auto' }}
-                disabled={loading}
-              >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          {loading && <LinearProgress sx={{ mb: 2 }} />}
-          
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
-
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Последние задачи
-          </Typography>
-          
-          {stats?.recentTasks && stats.recentTasks.length > 0 ? (
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Пользователь</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Статус</TableCell>
-                    <TableCell>Создана</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {stats.recentTasks.map((task) => (
-                    <TableRow key={task.id} hover>
-                      <TableCell>{task.id}</TableCell>
-                      <TableCell>{task.username}</TableCell>
-                      <TableCell>{task.email}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={task.isCompleted ? 'Выполнена' : 'В работе'}
-                          size="small"
-                          color={task.isCompleted ? 'success' : 'default'}
-                          variant={task.isEdited ? 'outlined' : 'filled'}
-                        />
-                        {task.isEdited && (
-                          <Chip
-                            label="Редакт."
-                            size="small"
-                            color="warning"
-                            sx={{ ml: 1 }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(task.createdAt)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Alert severity="info">Нет задач для отображения</Alert>
-          )}
-
-          <Box sx={{ mt: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button
-              variant="contained"
-              onClick={() => window.location.href = '/'}
-            >
-              К списку задач
-            </Button>
+            setStats(statsResponse.data);
             
-            <Button
-              variant="outlined"
-              color="success"
-              onClick={() => {
-                const encoder = new TextEncoder();
-                const dataStr = JSON.stringify(tasks, null, 2);
-                const dataBlob = new Blob(['\uFEFF' + dataStr], { 
-                  type: 'application/json;charset=utf-8' 
-                });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'tasks_export.json';
-                link.click();
-              }}
-            >
-              Экспорт задач (UTF-8)
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
-  );
+            const recent = (tasksResponse.data.data || []).map((task: any) => ({
+                id: task.id,
+                title: task.title,
+                username: task.username,
+                projectName: task.projectName,
+                isCompleted: task.isCompleted,
+                createdAt: task.createdAt
+            }));
+            
+            setRecentTasks(recent);
+            
+        } catch (err: any) {
+            console.error('ошибка загрузки статистики:', err);
+            setError('не удалось загрузить статистику');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchStats();
+    }, []);
+
+    const formatDate = (dateString: string): string => {
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU', {
+                day: 'numeric',
+                month: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return 'дата неизвестна';
+        }
+    };
+
+    if (loading && !stats) {
+        return (
+            <Box display="flex" justifyContent="center" py={4}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ p: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h4" component="h1">
+                    панель администратора
+                </Typography>
+                <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon />}
+                    onClick={fetchStats}
+                    disabled={loading}
+                >
+                    обновить
+                </Button>
+            </Box>
+
+            {error && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                </Alert>
+            )}
+
+            {/* Статистика */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" alignItems="center" justifyContent="space-between">
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        всего задач
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {stats?.tasks.total || 0}
+                                    </Typography>
+                                </Box>
+                                <TaskIcon sx={{ fontSize: 40, color: 'primary.main', opacity: 0.3 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" alignItems="center" justifyContent="space-between">
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        выполнено
+                                    </Typography>
+                                    <Typography variant="h4" color="success.main">
+                                        {stats?.tasks.completed || 0}
+                                    </Typography>
+                                </Box>
+                                <CompletedIcon sx={{ fontSize: 40, color: 'success.main', opacity: 0.3 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" alignItems="center" justifyContent="space-between">
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        проекты
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {stats?.projects || 0}
+                                    </Typography>
+                                </Box>
+                                <TaskIcon sx={{ fontSize: 40, color: 'secondary.main', opacity: 0.3 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                    <Card>
+                        <CardContent>
+                            <Box display="flex" alignItems="center" justifyContent="space-between">
+                                <Box>
+                                    <Typography color="textSecondary" gutterBottom variant="body2">
+                                        пользователи
+                                    </Typography>
+                                    <Typography variant="h4">
+                                        {stats?.users || 0}
+                                    </Typography>
+                                </Box>
+                                <WarningIcon sx={{ fontSize: 40, color: 'warning.main', opacity: 0.3 }} />
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Последние задачи */}
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            последние задачи
+                        </Typography>
+                        <List>
+                            {recentTasks.length === 0 ? (
+                                <ListItem>
+                                    <ListItemText primary="нет задач" />
+                                </ListItem>
+                            ) : (
+                                recentTasks.map((task, index) => (
+                                    <React.Fragment key={task.id}>
+                                        <ListItem>
+                                            <ListItemText
+                                                primary={
+                                                    <Box display="flex" alignItems="center" gap={1}>
+                                                        <Typography variant="body1">
+                                                            {task.title}
+                                                        </Typography>
+                                                        {task.isCompleted && (
+                                                            <Chip
+                                                                size="small"
+                                                                label="выполнено"
+                                                                color="success"
+                                                                sx={{ height: 20, fontSize: '0.7rem' }}
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                }
+                                                secondary={
+                                                    <>
+                                                        <Typography variant="body2" component="span">
+                                                            {task.username} • {task.projectName}
+                                                        </Typography>
+                                                        <br />
+                                                        <Typography variant="caption" color="textSecondary">
+                                                            {formatDate(task.createdAt)}
+                                                        </Typography>
+                                                    </>
+                                                }
+                                            />
+                                        </ListItem>
+                                        {index < recentTasks.length - 1 && <Divider />}
+                                    </React.Fragment>
+                                ))
+                            )}
+                        </List>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            задачи на модерации
+                        </Typography>
+                        <List>
+                            {/* здесь можно добавить список запросов на задачи */}
+                            <ListItem>
+                                <ListItemText primary="модерация задач вынесена в отдельный компонент" />
+                            </ListItem>
+                        </List>
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Box>
+    );
 };
 
 export default AdminPanel;

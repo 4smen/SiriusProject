@@ -3,28 +3,22 @@ import {
     getTasks, 
     createTask, 
     updateTask, 
-    getStats, 
-    getAnomalies,
-    checkAllTasksAnomalies,
-    resolveAnomaly,
-    completeTaskFromAnomaly
+    getStats,
+    getTaskById,
+    getUserTasks
 } from '../controllers/taskController';
-import { authenticateAdmin, requireAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
-//публичные роуты
-router.get('/', getTasks);
-router.post('/', createTask);
-router.get('/stats', getStats);
+// публичные роуты (доступны всем авторизованным)
+router.get('/', authenticate, getTasks);
+router.get('/stats', authenticate, getStats);
+router.get('/my', authenticate, getUserTasks); // задачи текущего пользователя
+router.get('/:id', authenticate, getTaskById);
 
-//защищенные роуты (только для админа)
-router.patch('/:id', authenticateAdmin, requireAdmin, updateTask);
-
-//маршруты для аномалий (только для админа)
-router.get('/anomalies', authenticateAdmin, getAnomalies);
-router.post('/anomalies/check-all', authenticateAdmin, checkAllTasksAnomalies);
-router.post('/anomalies/:id/resolve', authenticateAdmin, resolveAnomaly);
-router.post('/anomalies/:id/complete', authenticateAdmin, completeTaskFromAnomaly);
+// роуты только для админа
+router.post('/', authenticate, requireAdmin, createTask); // админ создаёт задачу (из запроса)
+router.patch('/:id', authenticate, requireAdmin, updateTask);
 
 export default router;

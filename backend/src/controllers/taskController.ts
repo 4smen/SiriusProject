@@ -1,33 +1,39 @@
 ﻿import { Request, Response } from 'express';
 import { db } from '../db';
-import { TaskCreateDTO, TaskUpdateDTO, PaginatedResponse } from '../types/task';
 import { aiService } from '../services/aiService';
 
-//получение задачек с пагинацией и сортировкой
+// получение всех задач (с пагинацией)
 export const getTasks = async (req: Request, res: Response) => {
     try {
         const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 3;
+        const limit = parseInt(req.query.limit as string) || 10;
         const sortField = (req.query.sortField as string) || 'createdAt';
         const sortOrder = (req.query.sortOrder as string) || 'DESC';
 
         const offset = (page - 1) * limit;
 
-        const allowedFields = ['username', 'email', 'isCompleted', 'createdAt'];
+        // разрешённые поля для сортировки
+        const allowedFields = ['title', 'isCompleted', 'createdAt', 'completedAt'];
         const field = allowedFields.includes(sortField) ? sortField : 'createdAt';
         const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
         const totalResult = await db.get('SELECT COUNT(*) as count FROM tasks');
         const total = totalResult.count;
 
-        const tasks = await db.all(
-            `SELECT * FROM tasks 
-             ORDER BY ${field} ${order}
-             LIMIT ? OFFSET ?`,
-            [limit, offset]
-        );
+        const tasks = await db.all(`
+            SELECT 
+                t.*,
+                u.username,
+                u.email as userEmail,
+                p.name as projectName
+            FROM tasks t
+            JOIN users u ON t.userId = u.id
+            JOIN projects p ON t.projectId = p.id
+            ORDER BY t.${field} ${order}
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
 
-        const response: PaginatedResponse<any> = {
+        res.json({
             data: tasks,
             pagination: {
                 total,
@@ -35,71 +41,115 @@ export const getTasks = async (req: Request, res: Response) => {
                 totalPages: Math.ceil(total / limit),
                 limit
             }
-        };
+        });
 
-        res.json(response);
     } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('ошибка получения задач:', error);
+        res.status(500).json({ error: 'внутренняя ошибка сервера' });
     }
 };
 
-//создание задачи
+// получение задач текущего пользователя
+export const getUserTasks = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.id;
+        const tasks = await db.all(`
+            SELECT 
+                t.*,
+                p.name as projectName
+            FROM tasks t
+            JOIN projects p ON t.projectId = p.id
+            WHERE t.userId = ?
+            ORDER BY t.createdAt DESC
+        `, [userId]);
+
+        res.json(tasks);
+    } catch (error) {
+        console.error('ошибка получения задач пользователя:', error);
+        res.status(500).json({ error: 'внутренняя ошибка сервера' });
+    }
+};
+
+// получение задачи по id
+export const getTaskById = async (req: Request, res: Response) => {
+    try {
+        const taskId = parseInt(req.params.id);
+        const task = await db.get(`
+            SELECT 
+                t.*,
+                u.username,
+                u.email as userEmail,
+                p.name as projectName
+            FROM tasks t
+            JOIN users u ON t.userId = u.id
+            JOIN projects p ON t.projectId = p.id
+            WHERE t.id = ?
+        `, [taskId]);
+
+        if (!task) {
+            return res.status(404).json({ error: 'задача не найдена' });
+        }
+
+        res.json(task);
+    } catch (error) {
+        console.error('ошибка получения задачи:', error);
+        res.status(500).json({ error: 'внутренняя ошибка сервера' });
+    }
+};
+
+// создание задачи (только админ, из утверждённого запроса)
 export const createTask = async (req: Request, res: Response) => {
     try {
-        const { username, email, text }: TaskCreateDTO = req.body;
+        const { userId, projectId, title, description, requestId } = req.body;
 
-        const now = new Date();
+        if (!userId || !projectId || !title || !description) {
+            return res.status(400).json({ error: 'все поля обязательны' });
+        }
 
-        const localTime = now.toISOString();
+        const now = new Date().toISOString();
 
-        
         const result = await db.run(
-            'INSERT INTO tasks (username, email, text, createdAt) VALUES (?, ?, ?, ?)',
-            [username, email, text, localTime])
-
-        if (!username || !email || !text) {
-            return res.status(400).json({ error: 'All fields are required' });
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ error: 'Invalid email format' });
-        }
-
-        const newTask = await db.get(
-            'SELECT * FROM tasks WHERE id = ?',
-            [result.lastID]
+            `INSERT INTO tasks 
+             (userId, projectId, title, description, createdAt, requestId) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [userId, projectId, title, description, now, requestId || null]
         );
 
-        res.status(201).json(newTask);
+        const task = await db.get(`
+            SELECT 
+                t.*,
+                u.username,
+                p.name as projectName
+            FROM tasks t
+            JOIN users u ON t.userId = u.id
+            JOIN projects p ON t.projectId = p.id
+            WHERE t.id = ?
+        `, [result.lastID]);
+
+        res.status(201).json(task);
+
     } catch (error) {
-        console.error('Error creating task:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('ошибка создания задачи:', error);
+        res.status(500).json({ error: 'внутренняя ошибка сервера' });
     }
 };
 
-//обновление задачи (только для админа)
+// обновление задачи (только админ)
 export const updateTask = async (req: Request, res: Response) => {
     try {
         const taskId = parseInt(req.params.id);
-        const { text, isCompleted }: TaskUpdateDTO = req.body;
-        const isAdmin = (req as any).user?.isAdmin;
-
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
+        const { isCompleted, text } = req.body;
 
         const task = await db.get('SELECT * FROM tasks WHERE id = ?', [taskId]);
         if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
+            return res.status(404).json({ error: 'задача не найдена' });
         }
 
         const updates: string[] = [];
         const values: any[] = [];
 
-        if (text !== undefined && text !== task.text) {
-            updates.push('text = ?');
+        if (text !== undefined && text !== task.description) {
+            updates.push('description = ?');
             values.push(text);
             updates.push('isEdited = 1');
         }
@@ -107,10 +157,15 @@ export const updateTask = async (req: Request, res: Response) => {
         if (isCompleted !== undefined) {
             updates.push('isCompleted = ?');
             values.push(isCompleted ? 1 : 0);
+            
+            if (isCompleted && !task.isCompleted) {
+                updates.push('completedAt = ?');
+                values.push(new Date().toISOString());
+            }
         }
 
         if (updates.length === 0) {
-            return res.status(400).json({ error: 'No changes provided' });
+            return res.status(400).json({ error: 'нет изменений' });
         }
 
         values.push(taskId);
@@ -120,29 +175,33 @@ export const updateTask = async (req: Request, res: Response) => {
             values
         );
 
-        const updatedTask = await db.get(
-            'SELECT * FROM tasks WHERE id = ?',
-            [taskId]
-        );
+        const updatedTask = await db.get(`
+            SELECT 
+                t.*,
+                u.username,
+                p.name as projectName
+            FROM tasks t
+            JOIN users u ON t.userId = u.id
+            JOIN projects p ON t.projectId = p.id
+            WHERE t.id = ?
+        `, [taskId]);
 
+        // проверка аномалии при завершении задачи
         if (isCompleted && !task.isCompleted) {
-            aiService.checkCompletedTask(taskId).then(anomaly => {
-                if (anomaly) {
-                    console.log(`Anomaly detected for task ${taskId}:`, anomaly);
-                }
-            }).catch(error => {
-                console.error('Error checking anomaly:', error);
+            aiService.checkCompletedTask(taskId).catch(error => {
+                console.error('ошибка проверки аномалии:', error);
             });
         }
 
         res.json(updatedTask);
+
     } catch (error) {
-        console.error('Error updating task:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('ошибка обновления задачи:', error);
+        res.status(500).json({ error: 'внутренняя ошибка сервера' });
     }
 };
 
-//получение статистики
+// статистика
 export const getStats = async (req: Request, res: Response) => {
     try {
         const stats = await db.get(`
@@ -153,96 +212,17 @@ export const getStats = async (req: Request, res: Response) => {
             FROM tasks
         `);
 
-        res.json(stats);
-    } catch (error) {
-        console.error('Error getting stats:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
+        const projectsCount = await db.get('SELECT COUNT(*) as count FROM projects');
+        const usersCount = await db.get('SELECT COUNT(*) as count FROM users');
 
-//получение всех аномалий (только для админа)
-export const getAnomalies = async (req: Request, res: Response) => {
-    try {
-        const isAdmin = (req as any).user?.isAdmin;
-        
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        const anomalies = await aiService.getActiveAnomalies();
-        res.json(anomalies);
-    } catch (error) {
-        console.error('Error fetching anomalies:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-//ручная проверка всех активных задач
-export const checkAllTasksAnomalies = async (req: Request, res: Response) => {
-    try {
-        const isAdmin = (req as any).user?.isAdmin;
-        
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        const anomalies = await aiService.checkAllActiveTasks();
         res.json({
-            message: `Проверено задач, найдено аномалий: ${anomalies.length}`,
-            anomalies
+            tasks: stats,
+            projects: projectsCount.count,
+            users: usersCount.count
         });
+
     } catch (error) {
-        console.error('Error checking all tasks anomalies:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-//отметить аномалию как решенную
-export const resolveAnomaly = async (req: Request, res: Response) => {
-    try {
-        const isAdmin = (req as any).user?.isAdmin;
-        const anomalyId = parseInt(req.params.id);
-        
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Admin access required' });
-        }
-
-        const success = await aiService.resolveAnomaly(anomalyId);
-        
-        if (success) {
-            res.json({ message: 'Anomaly resolved successfully' });
-        } else {
-            res.status(404).json({ error: 'Anomaly not found' });
-        }
-    } catch (error) {
-        console.error('Error resolving anomaly:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-//выполнить задачу из аномалии
-export const completeTaskFromAnomaly = async (req: Request, res: Response) => {
-    try {
-        const isAdmin = (req as any).user?.isAdmin;
-        const anomalyId = parseInt(req.params.id);
-        
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'требуются права администратора' });
-        }
-
-        const success = await aiService.completeTaskFromAnomaly(anomalyId);
-        
-        if (success) {
-            const anomalies = await aiService.getActiveAnomalies();
-            res.json({ 
-                message: 'задача выполнена успешно',
-                anomalies 
-            });
-        } else {
-            res.status(404).json({ error: 'аномалия не найдена' });
-        }
-    } catch (error) {
-        console.error('ошибка при выполнении задачи из аномалии:', error);
+        console.error('ошибка получения статистики:', error);
         res.status(500).json({ error: 'внутренняя ошибка сервера' });
     }
 };

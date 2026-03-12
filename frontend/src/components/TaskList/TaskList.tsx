@@ -1,4 +1,5 @@
-﻿import React, { useEffect } from 'react';
+﻿// frontend/src/components/TaskList/TaskList.tsx
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTasks, setSort } from '../../store/slices/taskSlice';
 import { AppDispatch, RootState } from '../../store';
@@ -28,7 +29,7 @@ const TaskList: React.FC = () => {
     const handleSortChange = (event: SelectChangeEvent) => {
         const [field, order] = event.target.value.split('-');
         dispatch(setSort({
-            field: field as any,
+            field: field,
             order: order as 'ASC' | 'DESC'
         }));
     };
@@ -38,24 +39,20 @@ const TaskList: React.FC = () => {
             <Box sx={{ my: 4 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                     <Typography variant="h5" component="h1">
-                        Список задач ({pagination.total})
+                        список задач ({pagination.total})
                     </Typography>
 
                     <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Сортировка</InputLabel>
+                        <InputLabel>сортировка</InputLabel>
                         <Select
                             value={`${filters.sortField}-${filters.sortOrder}`}
-                            label="Сортировка"
+                            label="сортировка"
                             onChange={handleSortChange}
                         >
-                            <MenuItem value="username-ASC">Имя (А-Я)</MenuItem>
-                            <MenuItem value="username-DESC">Имя (Я-А)</MenuItem>
-                            <MenuItem value="email-ASC">Email (А-Я)</MenuItem>
-                            <MenuItem value="email-DESC">Email (Я-А)</MenuItem>
-                            <MenuItem value="isCompleted-ASC">Статус (не выполнены)</MenuItem>
-                            <MenuItem value="isCompleted-DESC">Статус (выполнены)</MenuItem>
-                            <MenuItem value="createdAt-DESC">Новые</MenuItem>
-                            <MenuItem value="createdAt-ASC">Старые</MenuItem>
+                            <MenuItem value="isCompleted-ASC">статус (не выполнены)</MenuItem>
+                            <MenuItem value="isCompleted-DESC">статус (выполнены)</MenuItem>
+                            <MenuItem value="createdAt-DESC">новые</MenuItem>
+                            <MenuItem value="createdAt-ASC">старые</MenuItem>
                         </Select>
                     </FormControl>
                 </Box>
@@ -72,7 +69,7 @@ const TaskList: React.FC = () => {
                     </Box>
                 ) : tasks.length === 0 ? (
                     <Alert severity="info">
-                        Нет задач. Создайте первую!
+                        нет задач
                     </Alert>
                 ) : (
                     <>

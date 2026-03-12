@@ -90,7 +90,7 @@ class AIService {
         activeHours: Math.round(activeHours * 100) / 100,
         estimatedHours: Math.round(forecast.estimated_hours * 100) / 100,
         deviation: Math.round(deviation * 100) / 100,
-        detectedAt: task.createdAt
+        detectedAt: new Date()
       };
 
       await this.saveAnomaly(anomaly);

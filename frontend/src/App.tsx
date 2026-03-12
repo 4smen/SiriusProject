@@ -1,11 +1,14 @@
-import React, { useEffect } from 'react';
+// frontend/src/App.tsx
+import React, { useEffect, useRef } from 'react';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store, RootState, AppDispatch } from './store';
 import TaskList from './components/TaskList/TaskList';
-import AddTaskForm from './components/AddTaskForm/AddTaskForm';
+import TaskRequestForm from './components/TaskRequestForm/TaskRequestForm';
+import ProjectForm from './components/ProjectForm/ProjectForm';
 import LoginForm from './components/LoginForm/LoginForm';
-import AIAnomalies from './components/AiAnomalies/AiAnomalies';
+import AdminModeration from './components/AdminModeration/AdminModeration';
 import { verifyToken } from './store/slices/authSlice';
+import { fetchProjects } from './store/slices/projectsSlice';
 import {
     Container,
     Box,
@@ -14,47 +17,55 @@ import {
     Toolbar,
     CssBaseline,
     Paper,
-    Chip,
     CircularProgress
 } from '@mui/material';
-import { Task as TaskIcon, Warning as WarningIcon } from '@mui/icons-material';
+import { Task as TaskIcon } from '@mui/icons-material';
 
 const AppContent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { user, isLoading, isVerified } = useSelector((state: RootState) => state.auth);
+    
+    // используем ref для предотвращения множественных вызовов
+    const initializedRef = useRef(false);
 
+    // проверка токена - только один раз
     useEffect(() => {
-        let isMounted = true;
-        
-        const verify = async () => {
-            if (isMounted) {
-                await dispatch(verifyToken());
-            }
-        };
+        // если уже инициализировали - выходим
+        if (initializedRef.current) return;
         
         const token = localStorage.getItem('token');
-        if (token && !isVerified) {
-            verify();
-        }
         
-        return () => {
-            isMounted = false;
+        const init = async () => {
+            if (token) {
+                await dispatch(verifyToken());
+            }
+            initializedRef.current = true;
         };
-    }, [dispatch, isVerified]);
+        
+        init();
+        
+    }, [dispatch]); // ← только dispatch в зависимостях
+
+    // загрузка проектов - только когда есть пользователь
+    useEffect(() => {
+        if (user) {
+            dispatch(fetchProjects());
+        }
+    }, [user, dispatch]); // ← user и dispatch
 
     if (isLoading && !isVerified) {
         return (
-            <Box sx={{ 
-                display: 'flex', 
+            <Box sx={{
+                display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center', 
-                alignItems: 'center', 
+                justifyContent: 'center',
+                alignItems: 'center',
                 height: '100vh',
                 gap: 2
             }}>
                 <CircularProgress />
                 <Typography variant="body1" color="text.secondary">
-                    Загрузка приложения...
+                    загрузка приложения...
                 </Typography>
             </Box>
         );
@@ -66,46 +77,33 @@ const AppContent: React.FC = () => {
                 <Toolbar>
                     <TaskIcon sx={{ mr: 1 }} />
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Task Manager
+                        task manager
                     </Typography>
-                    
                     <LoginForm />
                 </Toolbar>
             </AppBar>
 
             <Container maxWidth="lg" sx={{ py: 4 }}>
-                <AddTaskForm />
-                <TaskList />
-
-                {user?.isAdmin && (
-                    <Paper 
-                        elevation={0}
-                        sx={{ 
-                            mt: 4, 
-                            p: 3, 
-                            bgcolor: 'primary.light',
-                            color: 'white',
-                            borderRadius: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 2
-                        }}
-                    >
-                        <WarningIcon sx={{ fontSize: 32 }} />
-                        <Box>
-                            <Typography variant="h6" gutterBottom sx={{ color: 'white' }}>
-                                Панель администратора
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-                                Вы вошли как {user.username}. AI-ассистент отслеживает 
-                                аномалии времени выполнения задач.
-                            </Typography>
-                        </Box>
+                {user ? (
+                    <>
+                        {user.isAdmin && <ProjectForm />}
+                        <TaskRequestForm />
+                    </>
+                ) : (
+                    <Paper sx={{ p: 4, textAlign: 'center' }}>
+                        <Typography variant="h5" gutterBottom>
+                            добро пожаловать!
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                            войдите или зарегистрируйтесь, чтобы создавать задачи
+                        </Typography>
                     </Paper>
                 )}
+
+                <TaskList />
             </Container>
 
-            <AIAnomalies />
+            <AdminModeration />
         </Box>
     );
 };

@@ -1,11 +1,35 @@
 ﻿export interface Task {
     id: number;
-    username: string;
-    email: string;
-    text: string;
+    userId: number;
+    projectId: number;
+    title: string;
+    description: string;
+    deadline?: string;
     isCompleted: boolean;
     isEdited: boolean;
     createdAt: string;
+    completedAt?: string;
+    requestId?: number;
+    username?: string;
+    userEmail?: string;
+    projectName?: string;
+}
+
+export interface TaskRequest {
+    id: number;
+    userId: number;
+    projectId: number;
+    title: string;
+    description: string;
+    deadline?: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: string;
+    reviewedAt?: string;
+    reviewedBy?: number;
+    // joined fields
+    username?: string;
+    userEmail?: string;
+    projectName?: string;
 }
 
 export interface TaskCreateDTO {
@@ -17,6 +41,13 @@ export interface TaskCreateDTO {
 export interface TaskUpdateDTO {
     text?: string;
     isCompleted?: boolean;
+}
+
+export interface TaskRequestCreateDTO {
+    projectId: number;
+    title: string;
+    description: string;
+    deadline?: string;
 }
 
 export interface PaginatedResponse<T> {

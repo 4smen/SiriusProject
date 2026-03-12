@@ -1,19 +1,7 @@
-﻿import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+﻿// frontend/src/store/slices/authSlice.ts
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authAPI } from '../../services/api';
-
-interface AuthUser {
-    id: number;
-    username: string;
-    isAdmin: boolean;
-}
-
-interface AuthState {
-    user: AuthUser | null;
-    token: string | null;
-    isLoading: boolean;
-    error: string | null;
-    isVerified: boolean;
-}
+import { AuthState, User, LoginCredentials, RegisterCredentials } from '../../types/task';
 
 const storedToken = localStorage.getItem('token');
 const storedUser = localStorage.getItem('user');
@@ -28,24 +16,36 @@ const initialState: AuthState = {
 
 export const login = createAsyncThunk(
     'auth/login',
-    async (credentials: { username: string; password: string }, { rejectWithValue }) => {
+    async (credentials: LoginCredentials, { rejectWithValue }) => {
         try {
             const response = await authAPI.login(credentials);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || 'Ошибка входа');
+            return rejectWithValue(error.response?.data?.error || 'ошибка входа');
+        }
+    }
+);
+
+export const register = createAsyncThunk(
+    'auth/register',
+    async (credentials: RegisterCredentials, { rejectWithValue }) => {
+        try {
+            const response = await authAPI.register(credentials);
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.error || 'ошибка регистрации');
         }
     }
 );
 
 export const verifyToken = createAsyncThunk(
     'auth/verify',
-    async (_, { rejectWithValue, getState }) => {
+    async (_, { rejectWithValue }) => {
         try {
             const response = await authAPI.verify();
             return response.data;
         } catch (error: any) {
-            return rejectWithValue('Токен недействителен');
+            return rejectWithValue('токен недействителен');
         }
     }
 );
@@ -65,6 +65,7 @@ const authSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Login
             .addCase(login.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
@@ -82,26 +83,44 @@ const authSlice = createSlice({
                 state.error = action.payload as string;
                 state.isVerified = false;
             })
+            
+            // Register
+            .addCase(register.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(register.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.user = action.payload.user;
+                state.token = action.payload.token;
+                state.isVerified = true;
+                localStorage.setItem('token', action.payload.token);
+                localStorage.setItem('user', JSON.stringify(action.payload.user));
+            })
+            .addCase(register.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                state.isVerified = false;
+            })
 
+            // Verify
+            .addCase(verifyToken.pending, (state) => {
+                state.isLoading = true;
+            })
             .addCase(verifyToken.fulfilled, (state, action) => {
-                const newUser = action.payload.user;
-                const currentUser = state.user;
-
-                if (!currentUser || 
-                    currentUser.id !== newUser.id || 
-                    currentUser.username !== newUser.username ||
-                    currentUser.isAdmin !== newUser.isAdmin) {
-                    state.user = newUser;
-                }
-                
+                state.isLoading = false;
+                state.user = action.payload.user;
                 state.isVerified = true;
             })
             .addCase(verifyToken.rejected, (state) => {
+                state.isLoading = false;
                 state.user = null;
                 state.token = null;
                 state.isVerified = true;
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                // ⚠️ НЕ делаем редирект здесь!
+                // Просто очищаем состояние, компоненты сами обновятся
             })
 
             // Logout
@@ -113,5 +132,5 @@ const authSlice = createSlice({
     }
 });
 
-export const { clearError: clearAuthError } = authSlice.actions;
+export const { clearError } = authSlice.actions;  // ←注意: clearError, а не clearAuthError
 export default authSlice.reducer;

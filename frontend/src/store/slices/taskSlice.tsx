@@ -1,16 +1,22 @@
-﻿import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+﻿// frontend/src/store/slices/taskSlice.ts
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { tasksAPI } from '../../services/api';
-import { ITask, TasksResponse, TaskFilters, TaskCreateDTO, TaskUpdateDTO } from '../../types/task';
+import { Task, PaginatedResponse, PaginationParams } from '../../types/task';
 
 interface TasksState {
-    tasks: ITask[];
+    tasks: Task[];
     pagination: {
         total: number;
         page: number;
         totalPages: number;
         limit: number;
     };
-    filters: TaskFilters;
+    filters: {
+        page: number;
+        limit: number;
+        sortField: string;
+        sortOrder: 'ASC' | 'DESC';
+    };
     loading: boolean;
     error: string | null;
 }
@@ -21,11 +27,11 @@ const initialState: TasksState = {
         total: 0,
         page: 1,
         totalPages: 1,
-        limit: 3
+        limit: 10
     },
     filters: {
         page: 1,
-        limit: 3,
+        limit: 10,
         sortField: 'createdAt',
         sortOrder: 'DESC'
     },
@@ -35,56 +41,44 @@ const initialState: TasksState = {
 
 export const fetchTasks = createAsyncThunk(
     'tasks/fetchTasks',
-    async (params: Partial<TaskFilters>, { rejectWithValue }) => {
+    async (params: Partial<PaginationParams>, { rejectWithValue }) => {
         try {
-            const response = await tasksAPI.getTasks(params);
+            const response = await tasksAPI.getAll(params);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || 'Ошибка загрузки задач');
-        }
-    }
-);
-
-export const createTask = createAsyncThunk(
-    'tasks/createTask',
-    async (taskData: TaskCreateDTO, { rejectWithValue }) => {
-        try {
-            const response = await tasksAPI.createTask(taskData);
-            return response.data;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || 'Ошибка создания задачи');
+            return rejectWithValue(error.response?.data?.error || 'ошибка загрузки задач');
         }
     }
 );
 
 export const updateTask = createAsyncThunk(
     'tasks/updateTask',
-    async ({ id, updates }: { id: number; updates: TaskUpdateDTO }, { rejectWithValue }) => {
+    async ({ id, updates }: { id: number; updates: any }, { rejectWithValue }) => {
         try {
-            const response = await tasksAPI.updateTask(id, updates);
+            const response = await tasksAPI.update(id, updates);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.error || 'Ошибка обновления задачи');
+            return rejectWithValue(error.response?.data?.error || 'ошибка обновления задачи');
         }
     }
 );
+
+// ⚠️ ВНИМАНИЕ: createTask больше не используется!
+// Теперь задачи создаются через запросы (task-requests)
 
 const tasksSlice = createSlice({
     name: 'tasks',
     initialState,
     reducers: {
-        setFilters: (state, action: PayloadAction<Partial<TaskFilters>>) => {
+        setFilters: (state, action: PayloadAction<Partial<typeof initialState.filters>>) => {
             state.filters = { ...state.filters, ...action.payload };
         },
         setPage: (state, action: PayloadAction<number>) => {
             state.filters.page = action.payload;
         },
-        setSort: (state, action: PayloadAction<{ field: TaskFilters['sortField']; order: TaskFilters['sortOrder'] }>) => {
+        setSort: (state, action: PayloadAction<{ field: string; order: 'ASC' | 'DESC' }>) => {
             state.filters.sortField = action.payload.field;
             state.filters.sortOrder = action.payload.order;
-        },
-        clearError: (state) => {
-            state.error = null;
         }
     },
     extraReducers: (builder) => {
@@ -102,34 +96,14 @@ const tasksSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload as string;
             })
-
-            // Create task
-            .addCase(createTask.pending, (state) => {
-                state.error = null;
-            })
-            .addCase(createTask.fulfilled, (state, action) => {
-                state.tasks = [action.payload, ...state.tasks];
-                state.pagination.total += 1;
-            })
-            .addCase(createTask.rejected, (state, action) => {
-                state.error = action.payload as string;
-            })
-
-            // Update task
-            .addCase(updateTask.pending, (state) => {
-                state.error = null;
-            })
             .addCase(updateTask.fulfilled, (state, action) => {
-                const index = state.tasks.findIndex(task => task.id === action.payload.id);
+                const index = state.tasks.findIndex(t => t.id === action.payload.id);
                 if (index !== -1) {
                     state.tasks[index] = action.payload;
                 }
-            })
-            .addCase(updateTask.rejected, (state, action) => {
-                state.error = action.payload as string;
             });
     }
 });
 
-export const { setFilters, setPage, setSort, clearError } = tasksSlice.actions;
+export const { setFilters, setPage, setSort } = tasksSlice.actions;
 export default tasksSlice.reducer;
