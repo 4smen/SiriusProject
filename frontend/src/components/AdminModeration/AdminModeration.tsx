@@ -159,36 +159,7 @@ const AdminModeration: React.FC = () => {
 
     return (
         <>
-            <Tooltip title="модерация задач">
-                <PulsingBadge
-                    badgeContent={pendingRequests.length}
-                    color="error"
-                    sx={{
-                        position: 'fixed',
-                        bottom: 24,
-                        right: 24,
-                        zIndex: 1200,
-                    }}
-                >
-                    <IconButton
-                        onClick={() => setIsOpen(!isOpen)}
-                        sx={{
-                            bgcolor: isOpen ? 'error.main' : 'primary.main',
-                            color: 'white',
-                            width: 56,
-                            height: 56,
-                            '&:hover': {
-                                bgcolor: isOpen ? 'error.dark' : 'primary.dark',
-                            },
-                            boxShadow: 3,
-                        }}
-                    >
-                        {requestsLoading ? <CircularProgress size={24} color="inherit" /> : <AdminIcon />}
-                    </IconButton>
-                </PulsingBadge>
-            </Tooltip>
-
-            {isOpen && (
+            (
                 <Paper
                     elevation={6}
                     sx={{
@@ -333,7 +304,7 @@ const AdminModeration: React.FC = () => {
                         )}
                     </Box>
                 </Paper>
-            )}
+            )
 
             <Snackbar
                 open={snackbarOpen}
