@@ -1,3 +1,11 @@
+# for i in range(len(sentences)):
+# annoy.add_item(i, embeddings[i])
+
+# annoy.build(trees)
+
+# for i in annoy.get_nns_by_vector(embeddings[8], neighbours):
+#     print(sentences[i])
+
 import os
 from typing import Optional
 from datetime import datetime
@@ -8,6 +16,7 @@ import uvicorn
 from dotenv import load_dotenv
 from logic import LlmClient
 import aiohttp
+from annoy import AnnoyIndex
 import sys
 
 load_dotenv()
@@ -19,6 +28,8 @@ app = FastAPI(
 )
 
 llm_client = LlmClient()
+
+annoy = AnnoyIndex(312, 'angular')
 
 app.add_middleware(
     CORSMiddleware,
