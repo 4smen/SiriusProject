@@ -13,6 +13,6 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*", "create-anomalies-table.js"],
+  "include": ["src/**/*", "create-anomalies-table.js", "add-startdate-column.js"],
   "exclude": ["node_modules", "dist"]
 }
